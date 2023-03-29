@@ -255,7 +255,9 @@ contract TaskManager is ITaskManager, Ownable {
     function getAllBatchTaskByPollID(
         uint _pollID
     ) public view returns (BatchTask[] memory) {
-        BatchTask[] memory listBatchTasks;
+        BatchTask[] memory listBatchTasks = new BatchTask[](
+            pollIdToPoll[_pollID].batchTaskIds.length
+        );
         for (uint i = 0; i < pollIdToPoll[_pollID].batchTaskIds.length; i++) {
             listBatchTasks[i] = batchTaskIdToBatchTask[
                 pollIdToPoll[_pollID].batchTaskIds[i]
@@ -265,9 +267,9 @@ contract TaskManager is ITaskManager, Ownable {
     }
 
     function getAllPoll() public view returns (Poll[] memory) {
-        Poll[] memory listPolls;
+        Poll[] memory listPolls = new Poll[](pollCount);
         for (uint i = 0; i < pollCount; i++) {
-            listPolls[i] = pollIdToPoll[i];
+            listPolls[i] = pollIdToPoll[i + 1];
         }
         return listPolls;
     }

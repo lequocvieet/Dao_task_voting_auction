@@ -92,6 +92,12 @@ async function main() {
     account3.address //reviewer
   );
 
+  let polls = await taskManager.getAllPoll();
+  console.log("polls", polls);
+
+  let batchTasks = await taskManager.getAllBatchTaskByPollID(1);
+  console.log("batchTasks", batchTasks);
+
   //open poll for vote at task manager 1000s
   await taskManager.openPollForVote(1, 1000);
 
@@ -117,6 +123,7 @@ async function main() {
   //account 4 place bid 90wei on task1 of batchTask1 with current reward=100wei
   //account 5 place bid 80 wei on same task to kick account4 out
   await taskAuction.connect(account4).placeBid(1, { value: 90 });
+  await taskAuction.connect(account5).placeBid(1, { value: 80 });
 
   //Call end Auction at TaskAuction
 
