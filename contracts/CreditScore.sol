@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 import "./interfaces/ICreditScore.sol";
+import "hardhat/console.sol";
 
 contract CreditScore is ICreditScore {
     CreditScore[] creditScores;

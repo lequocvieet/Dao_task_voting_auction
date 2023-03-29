@@ -2,6 +2,7 @@ pragma solidity ^0.8.17;
 import "./interfaces/ITaskManager.sol";
 import "./interfaces/ITaskAuction.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 //Todo: ver2: instead of using for loop =>use more mapping
 contract TaskAuction is ITaskAuction, Ownable {
@@ -89,8 +90,6 @@ contract TaskAuction is ITaskAuction, Ownable {
             auctionTask.lowestBidder = msg.sender;
         }
         taskIdToAuctionTask[_taskID] = auctionTask; //update value in mapping
-
-        //update to array
 
         //auctionTasks.push(auctionTask);
         for (uint i = 0; i < auctionTasks.length; i++) {

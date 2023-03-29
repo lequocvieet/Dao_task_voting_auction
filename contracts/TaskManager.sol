@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ITaskAuction.sol";
 import "./interfaces/IBatchTaskVoting.sol";
 import "./interfaces/ICreditScore.sol";
+import "hardhat/console.sol";
 
 // Contract definition
 contract TaskManager is ITaskManager, Ownable {
@@ -111,6 +112,8 @@ contract TaskManager is ITaskManager, Ownable {
 
     //Open Poll for vote
     //Todo:should call by onlyOwner?
+    //Todo: require state
+    //Todo: check pollId exist
     function openPollForVote(uint _pollId, uint _voteDuration) public {
         for (uint i = 0; i < pollIdToPoll[_pollId].batchTaskIds.length; i++) {
             batchTaskIdToBatchTask[pollIdToPoll[_pollId].batchTaskIds[i]]
@@ -130,6 +133,7 @@ contract TaskManager is ITaskManager, Ownable {
     }
 
     //Todo: only call by who?
+    //Todo: checkID exist
     function openBatchTaskForAuction(
         uint _batchTaskID,
         uint _auctionDuration

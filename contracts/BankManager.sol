@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 // Import ERC20 Token
 import "./Token.sol";
+import "hardhat/console.sol";
 
 // Declare the contract
 contract BankManager {
