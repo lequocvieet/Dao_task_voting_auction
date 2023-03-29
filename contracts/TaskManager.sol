@@ -252,9 +252,23 @@ contract TaskManager is ITaskManager, Ownable {
         }
     }
 
-    function getBatchTask(
-        uint _batchTaskID
-    ) public view returns (BatchTask memory) {
-        return batchTaskIdToBatchTask[_batchTaskID];
+    function getAllBatchTaskByPollID(
+        uint _pollID
+    ) public view returns (BatchTask[] memory) {
+        BatchTask[] memory listBatchTasks;
+        for (uint i = 0; i < pollIdToPoll[_pollID].batchTaskIds.length; i++) {
+            listBatchTasks[i] = batchTaskIdToBatchTask[
+                pollIdToPoll[_pollID].batchTaskIds[i]
+            ];
+        }
+        return listBatchTasks;
+    }
+
+    function getAllPoll() public view returns (Poll[] memory) {
+        Poll[] memory listPolls;
+        for (uint i = 0; i < pollCount; i++) {
+            listPolls[i] = pollIdToPoll[i];
+        }
+        return listPolls;
     }
 }

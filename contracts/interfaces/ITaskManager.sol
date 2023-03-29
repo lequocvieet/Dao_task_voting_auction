@@ -82,7 +82,9 @@ interface ITaskManager {
         uint _newPoint //point =duration
     ) external;
 
-    function getBatchTask(
-        uint _batchTaskID
-    ) external view returns (BatchTask memory);
+    function getAllBatchTaskByPollID(
+        uint _pollID
+    ) external view returns (BatchTask[] memory);
+
+    function getAllPoll() external view returns (Poll[] memory);
 }
