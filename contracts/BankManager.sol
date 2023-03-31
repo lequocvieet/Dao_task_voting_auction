@@ -1,43 +1,63 @@
-// Bank Manager Smart Contract Manages account Balance
-pragma solidity ^0.8.17;
-// Import ERC20 Token
+// SPDX-License-Identifier: MIT
+//BankManager manages all balance of all account
+// and contract in many different ERC20 token type
+pragma solidity ^0.8.0;
+
 import "./Token.sol";
-import "hardhat/console.sol";
 
-// Declare the contract
 contract BankManager {
-    // Define the ERC20 token instance
-    Token private erc20Token;
+    address private owner;
+    mapping(address => mapping(address => uint256)) private balances; // mapping of user addresses to token addresses to balances
 
-    function chooseToken(address _erc20Address) public {
-        erc20Token = Token(_erc20Address);
+    event Mint(address indexed account, uint256 amount);
+    event Burn(address indexed account, uint256 amount);
+    event Transfer(address indexed from, address indexed to);
+
+    constructor() {
+        owner = msg.sender;
     }
 
-    // Function to fund the ERC20 token
-    function fundTokenErc20(uint256 _amount) public {
-        // Transfer tokens to the contract from the sender
-        erc20Token.transferFrom(msg.sender, address(this), _amount);
+    modifier onlyOwner() {
+        require(
+            msg.sender == owner,
+            "Only the contract owner can call this function"
+        );
+        _;
     }
 
-    // Function to mint new tokens
-    function mint(uint256 _amount) public {
-        // Mint new tokens and send them to the sender
-        erc20Token.mint(msg.sender, _amount);
+    function mint(address tokenAddress, uint256 amount) public onlyOwner {
+        Token(tokenAddress).mint(address(this), amount); // Mint new tokens and add them to the contract's balance
+        balances[address(this)][tokenAddress] += amount;
     }
 
-    // Function to burn tokens
-    function burn(uint256 _amount) public {
-        // Burn tokens from the sender's account
-        erc20Token.burn(msg.sender, _amount);
+    function burn(address tokenAddress, uint256 amount) public onlyOwner {
+        require(
+            balances[address(this)][tokenAddress] >= amount,
+            "Not enough tokens to burn"
+        );
+        Token(tokenAddress).burn(address(this), amount); // Burn the specified amount of tokens
+        balances[address(this)][tokenAddress] -= amount;
     }
 
-    // Function to transfer tokens
-    function transferToken(address _recipient, uint256 _amount) public {
-        // Transfer tokens from the sender's account to the specified recipient
-        erc20Token.transfer(_recipient, _amount);
+    function transfer(
+        address tokenAddress,
+        address recipient,
+        uint256 amount
+    ) public {
+        require(
+            balances[msg.sender][tokenAddress] >= amount,
+            "Not enough funds to transfer"
+        );
+
+        Token(tokenAddress).transfer(recipient, amount); // Transfer tokens to the recipient
+        balances[msg.sender][tokenAddress] -= amount;
+        balances[recipient][tokenAddress] += amount;
     }
 
-    function getBalance(address account) public view returns (uint256) {
-        return erc20Token.getBalance(account);
+    function balanceOf(
+        address user,
+        address tokenAddress
+    ) public view returns (uint256) {
+        return balances[user][tokenAddress];
     }
 }

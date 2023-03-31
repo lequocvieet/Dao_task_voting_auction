@@ -14,8 +14,27 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     //mapping batchTaskIdToVoterToVoted
     mapping(uint => mapping(address => bool)) batchTaskIdToVoterToVoted;
 
+    mapping(uint => mapping(address => bool)) batchTaskIdToVoterToVoteChoice;
+
     //Array to store all BatchTaskVoting on vote and voted
     BatchTaskVoting[] public batchTasks;
+
+    event OpenForVote(
+        uint _batchTaskID,
+        uint _voteDuration,
+        BATCH_TASK_STATE batchTaskState,
+        uint timeStart
+    );
+
+    event VoteOnBatchTask(
+        BatchTaskVoting batchTaskVoted,
+        uint voteTime,
+        address indexed voter
+    );
+
+    event Notify(string notify);
+
+    event EndVote(BatchTaskVoting[] batchTaskCanEnd, uint endTime);
 
     modifier checkBatchTaskState(
         BATCH_TASK_STATE requiredState,
@@ -50,6 +69,12 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
 
         //save to array
         batchTasks.push(newBatchTask);
+        emit OpenForVote(
+            _batchTaskID,
+            _voteDuration,
+            BATCH_TASK_STATE.OPENFORVOTE,
+            block.timestamp
+        );
     }
 
     /**
@@ -64,20 +89,49 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     ) public checkBatchTaskState(BATCH_TASK_STATE.OPENFORVOTE, _batchTaskID) {
         //iterate through list of batchTasks in array
         //find baskTask by Id
-
         for (uint i = 0; i < batchTasks.length; i++) {
             if (batchTasks[i].batchTaskId == _batchTaskID) {
-                require(
-                    batchTaskIdToVoterToVoted[_batchTaskID][msg.sender] ==
-                        false,
-                    "User already vote on this batch task"
-                );
                 require(
                     block.timestamp >= batchTasks[i].startTime &&
                         block.timestamp <=
                         batchTasks[i].startTime + batchTasks[i].voteDuration,
                     "Voting is end or not open yet"
                 );
+
+                //Vote again
+                if (
+                    batchTaskIdToVoterToVoted[_batchTaskID][msg.sender] == true
+                ) {
+                    if (
+                        batchTaskIdToVoterToVoteChoice[_batchTaskID][
+                            msg.sender
+                        ] != _choice
+                    ) {
+                        //change vote choice
+                        if (_choice) {
+                            //Yes
+                            batchTasks[i].result = batchTasks[i].result + 2;
+                        } else {
+                            //No
+                            batchTasks[i].result = batchTasks[i].result - 2;
+                        }
+                        batchTaskIdToVoterToVoteChoice[_batchTaskID][
+                            msg.sender
+                        ] = _choice;
+                        //update to mapping
+                        batchTaskIdToBatchTaskVoting[_batchTaskID] = batchTasks[
+                            i
+                        ];
+                        emit VoteOnBatchTask(
+                            batchTasks[i],
+                            block.timestamp,
+                            msg.sender
+                        );
+                    } else {
+                        //nothing change
+                        break;
+                    }
+                }
                 if (_choice) {
                     //Yes
                     batchTasks[i].result++;
@@ -89,8 +143,17 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                 batchTasks[i].totalVote++;
 
                 batchTaskIdToVoterToVoted[_batchTaskID][msg.sender] = true;
+                batchTaskIdToVoterToVoteChoice[_batchTaskID][
+                    msg.sender
+                ] = _choice;
                 //update to mapping
                 batchTaskIdToBatchTaskVoting[_batchTaskID] = batchTasks[i];
+
+                emit VoteOnBatchTask(
+                    batchTasks[i],
+                    block.timestamp,
+                    msg.sender
+                );
 
                 //because id is unique, if found no need to loop anymore
                 break;
@@ -127,7 +190,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                     max = batchTaskCanEnd[i].result;
                 }
             }
-            console.log("max", uint(max));
+            emit EndVote(batchTaskCanEnd, block.timestamp);
             //Choose batchTask with higher results
             for (uint i = 0; i < batchTaskCanEnd.length; i++) {
                 if (max == batchTaskCanEnd[i].result) {
@@ -139,7 +202,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                 }
             }
         } else {
-            //Todo: emit event "There are no Voting can end at the moment!";
+            emit Notify("There are no Voting can end at the moment");
         }
     }
 }

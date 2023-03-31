@@ -2,11 +2,14 @@ pragma solidity ^0.8.17;
 import "./interfaces/ITaskManager.sol";
 import "./interfaces/ITaskAuction.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IBankManager.sol";
 import "hardhat/console.sol";
 
 //Todo: ver2: instead of using for loop =>use more mapping
 contract TaskAuction is ITaskAuction, Ownable {
     ITaskManager public taskManager;
+
+    IBankManager public bankManager;
 
     // Array to store all the tasks on Auction
     AuctionTask[] public auctionTasks;
@@ -15,6 +18,14 @@ contract TaskAuction is ITaskAuction, Ownable {
 
     //mapping  TaskId To AuctionTask
     mapping(uint => AuctionTask) taskIdToAuctionTask;
+
+    event OpenTaskForAuction(AuctionTask auctionTask);
+
+    event PlaceBid(Bid bid, uint bidTime, uint bidValue);
+
+    event Notify(string notify);
+
+    event EndAuction(AuctionTask auctionTask, uint endTime);
 
     modifier checkTaskState(TASK_STATE requiredState, uint _taskID) {
         require(
@@ -40,7 +51,7 @@ contract TaskAuction is ITaskAuction, Ownable {
             reward: _task.reward,
             minReward: _task.minReward,
             reporter: _task.reporter,
-            doer: _task.doer,
+            doer: address(0),
             reviewer: _task.reviewer,
             taskState: TASK_STATE.OPENFORAUCTION,
             lowestBidAmount: _task.reward,
@@ -53,6 +64,7 @@ contract TaskAuction is ITaskAuction, Ownable {
 
         //save to array
         auctionTasks.push(newAuctionTask);
+        emit OpenTaskForAuction(newAuctionTask);
     }
 
     /** 
@@ -100,33 +112,50 @@ contract TaskAuction is ITaskAuction, Ownable {
         }
         //save bid to bids
         bids.push(bid);
+        emit PlaceBid(bid, block.timestamp, msg.value);
     }
 
-    //Todo: only call by owner
+    function placeMultipleBid(uint[] memory taskIds) public {
+        for (uint i = 0; i < taskIds.length; i++) {
+            placeBid(taskIds[i]);
+        }
+    }
+
+    //Todo: only call by keeper
     function endAuction() public {
         //getAll batchTask with state=OPENFORAUCTION
         //and time Start+duration> time callEndAuction
+        bool found = false;
         for (uint i = 0; i < auctionTasks.length; i++) {
             if (
                 auctionTasks[i].taskState == TASK_STATE.OPENFORAUCTION &&
                 (block.timestamp >
                     auctionTasks[i].startTime + auctionTasks[i].duration)
             ) {
-                // Assign task to lowest bidder
-                auctionTasks[i].reward = auctionTasks[i].lowestBidAmount;
-                auctionTasks[i].doer = auctionTasks[i].lowestBidder;
-                auctionTasks[i].taskState = TASK_STATE.ASSIGNED;
-                // Pay all bidders back their bids
-                for (i = 0; i < bids.length; i++) {
-                    if (bids[i].taskId == auctionTasks[i].taskId) {
-                        payable(bids[i].bidder).transfer(
-                            bids[i].totalBidAmount
-                        );
+                found = true;
+                //check auction Task had user bided
+                if (auctionTasks[i].lowestBidder != address(0)) {
+                    // Assign task to lowest bidder
+                    auctionTasks[i].reward = auctionTasks[i].lowestBidAmount;
+                    auctionTasks[i].doer = auctionTasks[i].lowestBidder;
+                    auctionTasks[i].taskState = TASK_STATE.ASSIGNED;
+
+                    emit EndAuction(auctionTasks[i], block.timestamp);
+                    // Pay all bidders back their bids
+                    for (uint j = 0; j < bids.length; j++) {
+                        if (bids[j].taskId == auctionTasks[j].taskId) {
+                            payable(bids[j].bidder).transfer(
+                                bids[j].totalBidAmount
+                            );
+                        }
                     }
+                    //call assignTask in Task manager
+                    taskManager.assignTask(auctionTasks[i]);
                 }
-                //call assignTask in Task manager
-                taskManager.assignTask(auctionTasks[i]);
             }
+        }
+        if (found == false) {
+            emit Notify("There are no Auction can end at the moment");
         }
     }
 

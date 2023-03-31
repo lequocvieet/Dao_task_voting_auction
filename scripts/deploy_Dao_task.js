@@ -47,7 +47,7 @@ async function main() {
 
   //BankManager vs Token used for later version
 
-  //------------------------------------------Test Logic--------------------------------------
+  //------------------------------------------INIT--------------------------------------
 
   //TaskManager set BatchTaskVoting
   await taskManager.setBatchTaskVoting(batchTaskVoting.address);
@@ -63,6 +63,12 @@ async function main() {
 
   //BatchTaskVoting set TaskManager
   await batchTaskVoting.setTaskManager(taskManager.address);
+
+  // Define the amount of ether you want to send (in ETH to wei)
+  const amountToFund = ethers.utils.parseEther("90");
+
+  // Send the ether to the contract
+  await taskManager.connect(account0).fund({ value: amountToFund });
 
   //TaskManager initPoll, init BatchTask and init Task
   //choose account1 to be pollOwner account2 will be reporter,account3 will be reviewer of poll1
@@ -98,6 +104,8 @@ async function main() {
   let batchTasks = await taskManager.getAllBatchTaskByPollID(1);
   console.log("batchTasks", batchTasks);
 
+  //------------------------------------------Test Logic VOTING--------------------------------------
+
   //open poll for vote at task manager 1000s
   await taskManager.openPollForVote(1, 1000);
 
@@ -108,15 +116,16 @@ async function main() {
   //try to vote again and get revert
   //await batchTaskVoting.connect(account4).voteOnBatchTask(1, true);
 
-  //call endvote at batchTaskVoting still soon
-  //await batchTaskVoting.endVote();
+  //call endvote at batchTaskVoting too soon
+  await batchTaskVoting.endVote();
 
   //Increase Time then call endVote again
   await time.increase(2000);
   await batchTaskVoting.endVote();
 
-  //openBatchTaskForAuction at taskManager
-  //open for batchTask1 with 1000s duration
+  //------------------------------------------Test Logic AUCTION--------------------------------------
+
+  //open for Auction batchTask1 with 1000s duration
   await taskManager.openBatchTaskForAuction(1, 1000);
 
   //user place bid on each task in TaskAuction
@@ -125,13 +134,24 @@ async function main() {
   await taskAuction.connect(account4).placeBid(1, { value: 90 });
   await taskAuction.connect(account5).placeBid(1, { value: 80 });
 
-  //Call end Auction at TaskAuction
+  //Call end Auction at TaskAuction too soon to success
+  //await taskAuction.endAuction();
 
-  //User receiveTask at TaskManager
+  //increase time
+  await time.increase(2000);
+  await taskAuction.endAuction();
+
+  //After endAuction account4 must get back money
+  //and account 5 assigned Task1 and have permission to call receive task later
+
+  await taskManager.connect(account5).receiveTask(1);
 
   //User submit TaskResult
+  await taskManager.connect(account5).submitTaskResult(1);
 
   //Reviewer submit review Result
+  //Reviewer of task1 is account3 70% task Done
+  await taskManager.connect(account3).submitReview(1, 70);
 
   //Todo: Some one want to extend their task
 

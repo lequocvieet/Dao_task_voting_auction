@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 import "./interfaces/ICreditScore.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
 contract CreditScore is ICreditScore {
@@ -10,6 +11,13 @@ contract CreditScore is ICreditScore {
     mapping(uint => TaskDone) public taskDoneIdTaskDone;
 
     User[] users;
+
+    event SaveTaskDone(
+        uint taskId,
+        address indexed doer,
+        uint percentageDone,
+        uint timeSave
+    );
 
     //Todo:only call internal of this contract
     //Todo: exponential case
@@ -53,14 +61,17 @@ contract CreditScore is ICreditScore {
     ) public {
         if (userAddressToUser[_doer].userAddress == address(0)) {
             //no history before
-            User storage user = users[users.length + 1];
+            User memory user;
+            uint[] memory taskDoneIds = new uint[](10000);
+            taskDoneIds[0] = _taskId;
             user.userAddress = _doer;
-            user.taskDoneIds.push(_taskId);
+            user.taskDoneIds = taskDoneIds;
             taskDoneIdTaskDone[_taskId].percentageDone = _percentageDone;
             userAddressToUser[_doer] = user;
         } else {
             userAddressToUser[_doer].taskDoneIds.push(_taskId);
         }
+        emit SaveTaskDone(_taskId, _doer, _percentageDone, block.timestamp);
     }
 
     // Function to calculate commitment token based on credit score

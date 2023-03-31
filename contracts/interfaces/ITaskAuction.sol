@@ -47,4 +47,6 @@ interface ITaskAuction {
     function placeBid(uint _taskID) external payable;
 
     function endAuction() external;
+
+    function placeMultipleBid(uint[] memory taskIds) external;
 }

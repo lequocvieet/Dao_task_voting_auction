@@ -5,9 +5,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ITaskAuction.sol";
 import "./interfaces/IBatchTaskVoting.sol";
 import "./interfaces/ICreditScore.sol";
+import "./interfaces/IBankManager.sol";
 import "hardhat/console.sol";
 
-// Contract definition
+//Todo: receive money bid at taskAuction but pay back at TaskManager
+//Todo=> move all things relate to money to BankManager in ver2
+//Todo: change ETH to own token from bank ver2
 contract TaskManager is ITaskManager, Ownable {
     ITaskAuction public taskAuction;
 
@@ -15,11 +18,15 @@ contract TaskManager is ITaskManager, Ownable {
 
     ICreditScore public creditScore;
 
+    IBankManager public bankManager;
+
     uint public pollCount;
 
     uint public batchTaskCount;
 
     uint public taskCount;
+
+    uint public balance;
 
     // Array to store all the tasks created
     Task[] public tasks;
@@ -35,6 +42,68 @@ contract TaskManager is ITaskManager, Ownable {
     mapping(uint => Poll) pollIdToPoll;
 
     mapping(uint => BatchTask) batchTaskIdToBatchTask;
+
+    event PollInit(uint pollId, address indexed pollOwner);
+    event BatchTaskInit(uint batchTaskId, uint pollId);
+    event TaskInit(
+        uint batchTaskId,
+        uint point,
+        uint reward,
+        uint minReward,
+        address indexed reporter,
+        address indexed reviewer
+    );
+    event OpenPollForVote(
+        uint _pollId,
+        uint _voteDuration,
+        uint timeOpenPollVote,
+        address indexed pollOwner,
+        string pollState
+    );
+
+    event OpenBatchTaskForAuction(
+        uint batchTaskID,
+        uint auctionDuration,
+        uint timeOpen //Todo: indexed caller
+    );
+
+    event AssignTask(
+        uint taskId,
+        uint reward,
+        address indexed doer,
+        TASK_STATE taskState
+    );
+
+    event ReceiveTask(
+        uint taskId,
+        uint timeReceive,
+        address indexed doer,
+        TASK_STATE taskState
+        //Todo: emit more about balance
+    );
+
+    event SubmitTaskResult(
+        uint taskId,
+        uint timeSubmit,
+        address indexed doer,
+        TASK_STATE taskState
+    );
+
+    event SubmitReview(
+        uint taskId,
+        uint percentageDone,
+        address indexed reviewer,
+        TASK_STATE taskState,
+        uint timeSubmit
+        //Money transfer emit at bankManager.sol
+    );
+
+    event UpdateTask(
+        uint taskId,
+        uint newPoint,
+        address indexed updater,
+        uint timeUpdate
+    );
 
     modifier checkBatchTaskState(
         BATCH_TASK_STATE requiredState,
@@ -56,6 +125,10 @@ contract TaskManager is ITaskManager, Ownable {
         _;
     }
 
+    function fund() public payable {
+        balance += msg.value;
+    }
+
     function setTaskAuction(address _taskAuctionAddress) external onlyOwner {
         taskAuction = ITaskAuction(_taskAuctionAddress);
     }
@@ -70,6 +143,10 @@ contract TaskManager is ITaskManager, Ownable {
         creditScore = ICreditScore(_creditScoreAddress);
     }
 
+    function setBankManager(address _bankManagerAddress) external onlyOwner {
+        bankManager = IBankManager(_bankManagerAddress);
+    }
+
     //Todo: onlycall by backend with signed signature
     function initPoll(address _pollOwner) external {
         Poll memory newPoll;
@@ -78,6 +155,7 @@ contract TaskManager is ITaskManager, Ownable {
         newPoll.pollOwner = _pollOwner;
         pollIdToPoll[pollCount] = newPoll;
         polls.push(newPoll);
+        emit PollInit(pollCount, _pollOwner);
     }
 
     //Todo: onlycall by backend with signed signature
@@ -87,6 +165,7 @@ contract TaskManager is ITaskManager, Ownable {
         newBatchTask.batchTaskId = batchTaskCount;
         batchTaskIdToBatchTask[batchTaskCount] = newBatchTask;
         pollIdToPoll[_pollId].batchTaskIds.push(batchTaskCount);
+        emit BatchTaskInit(batchTaskCount, _pollId);
     }
 
     //Todo: onlycall by backend with signed signature
@@ -108,6 +187,14 @@ contract TaskManager is ITaskManager, Ownable {
         newTask.reviewer = _reviewer;
         batchTaskIdToBatchTask[_batchTaskId].taskIds.push(taskCount);
         taskIdToTask[taskCount] = newTask;
+        emit TaskInit(
+            _batchTaskId,
+            _point,
+            _reward,
+            _minReward,
+            _reporter,
+            _reviewer
+        );
     }
 
     //Open Poll for vote
@@ -124,6 +211,13 @@ contract TaskManager is ITaskManager, Ownable {
                 _voteDuration
             );
         }
+        emit OpenPollForVote(
+            _pollId,
+            _voteDuration,
+            block.timestamp,
+            msg.sender,
+            "OPEN FOR VOTE"
+        );
     }
 
     //Todo:OnlyCall by BatchTaskVoting after done vote
@@ -150,6 +244,11 @@ contract TaskManager is ITaskManager, Ownable {
                 _auctionDuration
             );
         }
+        emit OpenBatchTaskForAuction(
+            _batchTaskID,
+            _auctionDuration,
+            block.timestamp
+        );
     }
 
     //Todo:OnlyCall by TaskAuction after done auction
@@ -159,6 +258,12 @@ contract TaskManager is ITaskManager, Ownable {
         taskIdToTask[doneAuctionTask.taskId].reward = doneAuctionTask.reward;
         taskIdToTask[doneAuctionTask.taskId].doer = doneAuctionTask.doer;
         taskIdToTask[doneAuctionTask.taskId].taskState = TASK_STATE.ASSIGNED;
+        emit AssignTask(
+            doneAuctionTask.taskId,
+            doneAuctionTask.reward,
+            doneAuctionTask.doer,
+            TASK_STATE.ASSIGNED
+        );
     }
 
     /** 
@@ -176,8 +281,15 @@ contract TaskManager is ITaskManager, Ownable {
             msg.value >= commitmentToken,
             "Not provide enough money to receive task!"
         );
+        balance += msg.value;
         taskIdToTask[_taskId].taskState = TASK_STATE.RECEIVED;
         taskIdToTask[_taskId].timeDoerReceive = block.timestamp;
+        emit ReceiveTask(
+            _taskId,
+            block.timestamp,
+            msg.sender,
+            TASK_STATE.RECEIVED
+        );
     }
 
     /** 
@@ -192,6 +304,12 @@ contract TaskManager is ITaskManager, Ownable {
         require(taskIdToTask[_taskId].taskId == _taskId, "taskID not found");
         require(msg.sender == taskIdToTask[_taskId].doer, "Only doer can call");
         taskIdToTask[_taskId].taskState = TASK_STATE.SUBMITTED;
+        emit SubmitTaskResult(
+            _taskId,
+            block.timestamp,
+            msg.sender,
+            TASK_STATE.SUBMITTED
+        );
     }
 
     /** 
@@ -214,8 +332,8 @@ contract TaskManager is ITaskManager, Ownable {
             taskIdToTask[_taskId].taskId == _taskId,
             "taskID or batchTaskID not found"
         );
+        console.log("reward", taskIdToTask[_taskId].reward);
         uint payReward = (taskIdToTask[_taskId].reward * percentageDone) / 100; //in wei or decimal 10^18
-
         //transfer reward and commitmentToken deposit before
         payable(taskIdToTask[_taskId].doer).transfer(payReward);
 
@@ -226,6 +344,13 @@ contract TaskManager is ITaskManager, Ownable {
             percentageDone
         );
         taskIdToTask[_taskId].taskState = TASK_STATE.REVIEWED;
+        emit SubmitReview(
+            _taskId,
+            percentageDone,
+            msg.sender,
+            TASK_STATE.REVIEWED,
+            block.timestamp
+        );
     }
 
     /** 
@@ -250,6 +375,7 @@ contract TaskManager is ITaskManager, Ownable {
             taskIdToTask[_taskId].point = _newPoint;
             //Todo: require pay money to extend their task
         }
+        emit UpdateTask(_taskId, _newPoint, msg.sender, block.timestamp);
     }
 
     function getAllBatchTaskByPollID(
