@@ -7,10 +7,10 @@ import "./Token.sol";
 
 contract BankManager {
     address private owner;
-    mapping(address => mapping(address => uint256)) private balances; // mapping of user addresses to token addresses to balances
+    mapping(address => mapping(address => uint)) private balances; // mapping of user addresses to token addresses to balances
 
-    event Mint(address indexed account, uint256 amount);
-    event Burn(address indexed account, uint256 amount);
+    event Mint(address indexed account, uint amount);
+    event Burn(address indexed account, uint amount);
     event Transfer(address indexed from, address indexed to);
 
     constructor() {
@@ -25,12 +25,12 @@ contract BankManager {
         _;
     }
 
-    function mint(address tokenAddress, uint256 amount) public onlyOwner {
+    function mint(address tokenAddress, uint amount) public onlyOwner {
         Token(tokenAddress).mint(address(this), amount); // Mint new tokens and add them to the contract's balance
         balances[address(this)][tokenAddress] += amount;
     }
 
-    function burn(address tokenAddress, uint256 amount) public onlyOwner {
+    function burn(address tokenAddress, uint amount) public onlyOwner {
         require(
             balances[address(this)][tokenAddress] >= amount,
             "Not enough tokens to burn"
@@ -42,7 +42,7 @@ contract BankManager {
     function transfer(
         address tokenAddress,
         address recipient,
-        uint256 amount
+        uint amount
     ) public {
         require(
             balances[msg.sender][tokenAddress] >= amount,
@@ -57,7 +57,7 @@ contract BankManager {
     function balanceOf(
         address user,
         address tokenAddress
-    ) public view returns (uint256) {
+    ) public view returns (uint) {
         return balances[user][tokenAddress];
     }
 }

@@ -19,6 +19,13 @@ interface ITaskManager {
         uint pollId;
         address pollOwner;
         uint[] batchTaskIds;
+        POLL_STATE pollState;
+    }
+
+    enum POLL_STATE {
+        CREATED,
+        OPENFORVOTE,
+        VOTED
     }
 
     struct BatchTask {
@@ -28,14 +35,13 @@ interface ITaskManager {
     }
 
     enum BATCH_TASK_STATE {
-        OPENFORVOTE,
-        VOTED
+        CREATED,
+        VOTED,
+        OPENFORAUCTION
     }
 
     enum TASK_STATE {
-        //Do not have CREATED because Task created at backend
-        //DO not have OPENFORVOTE because that blongs to batchTask not specific task
-        OPENFORAUCTION,
+        CREATED,
         ASSIGNED,
         RECEIVED,
         SUBMITTED,
@@ -68,7 +74,7 @@ interface ITaskManager {
         ITaskAuction.AuctionTask memory doneAuctionTask
     ) external;
 
-    function receiveTask(uint _taskId) external payable;
+    function receiveTask(uint _taskId, uint _commitValue) external;
 
     function submitTaskResult(uint _taskId) external;
 

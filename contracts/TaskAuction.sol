@@ -14,18 +14,38 @@ contract TaskAuction is ITaskAuction, Ownable {
     // Array to store all the tasks on Auction
     AuctionTask[] public auctionTasks;
 
+    address public tokenAddress;
+
     Bid[] public bids;
+
+    BatchTaskAuction[] public batchTaskAuctions;
 
     //mapping  TaskId To AuctionTask
     mapping(uint => AuctionTask) taskIdToAuctionTask;
+    mapping(uint => BatchTaskAuction) batchTaskIdToBatchTask;
 
-    event OpenTaskForAuction(AuctionTask auctionTask);
+    event OpenTaskForAuction(
+        uint _batchTaskId,
+        uint _auctionDuration,
+        uint[] taskIds,
+        uint timeStart
+    );
 
-    event PlaceBid(Bid bid, uint bidTime, uint bidValue);
+    event PlaceBid(
+        uint _taskID,
+        uint _batchTaskID,
+        uint _amountBid,
+        uint bidTime
+    );
 
     event Notify(string notify);
 
-    event EndAuction(AuctionTask auctionTask, uint endTime);
+    event EndAuction(
+        BATCH_TASK_STATE batchTaskState,
+        uint batchTaskId,
+        AuctionTask auctionTask,
+        uint endTime
+    );
 
     modifier checkTaskState(TASK_STATE requiredState, uint _taskID) {
         require(
@@ -35,36 +55,73 @@ contract TaskAuction is ITaskAuction, Ownable {
         _;
     }
 
+    modifier checkBatchTaskState(
+        BATCH_TASK_STATE requiredState,
+        uint _BatchTaskID
+    ) {
+        require(
+            batchTaskIdToBatchTask[_BatchTaskID].batchTaskState ==
+                requiredState,
+            "Error: Invalid Batch Task State"
+        );
+        _;
+    }
+
     function setTaskManager(address _taskManagerAddress) external onlyOwner {
         taskManager = ITaskManager(_taskManagerAddress);
     }
 
+    function chooseToken(address _tokenAddress) external onlyOwner {
+        tokenAddress = _tokenAddress;
+    }
+
+    function setBankManager(address _bankManagerAddress) external onlyOwner {
+        bankManager = IBankManager(_bankManagerAddress);
+    }
+
     //Todo:only call by taskManager
     function openTaskForAuction(
-        ITaskManager.Task memory _task,
-        uint __auctionDuration
+        ITaskManager.Task[] memory _tasks,
+        uint _batchTaskId,
+        uint _auctionDuration
     ) public {
-        address payable _lowestBidder;
-        AuctionTask memory newAuctionTask = AuctionTask({
-            taskId: _task.taskId,
-            point: _task.point, // 1 point=4 hour doing Task
-            reward: _task.reward,
-            minReward: _task.minReward,
-            reporter: _task.reporter,
-            doer: address(0),
-            reviewer: _task.reviewer,
-            taskState: TASK_STATE.OPENFORAUCTION,
-            lowestBidAmount: _task.reward,
-            lowestBidder: _lowestBidder,
-            duration: __auctionDuration,
-            startTime: block.timestamp
+        uint[] memory _taskIds = new uint[](10000);
+        for (uint i = 0; i < _tasks.length; i++) {
+            address payable _lowestBidder;
+            AuctionTask memory newAuctionTask = AuctionTask({
+                taskId: _tasks[i].taskId,
+                point: _tasks[i].point, // 1 point=4 hour doing Task
+                reward: _tasks[i].reward,
+                minReward: _tasks[i].minReward,
+                reporter: _tasks[i].reporter,
+                doer: address(0),
+                reviewer: _tasks[i].reviewer,
+                taskState: TASK_STATE.OPENFORAUCTION,
+                lowestBidAmount: _tasks[i].reward,
+                lowestBidder: _lowestBidder
+            });
+            //save to mapping
+            taskIdToAuctionTask[_tasks[i].taskId] = newAuctionTask;
+            //save to array
+            auctionTasks.push(newAuctionTask);
+            _taskIds[i] = _tasks[i].taskId;
+        }
+        BatchTaskAuction memory newBatchTaskAuction = BatchTaskAuction({
+            batchTaskId: _batchTaskId,
+            taskIds: _taskIds,
+            duration: _auctionDuration,
+            startTime: block.timestamp,
+            batchTaskState: BATCH_TASK_STATE.OPENFORAUCTION
         });
-        //save to mapping
-        taskIdToAuctionTask[_task.taskId] = newAuctionTask;
+        batchTaskAuctions.push(newBatchTaskAuction);
+        batchTaskIdToBatchTask[_batchTaskId] = newBatchTaskAuction;
 
-        //save to array
-        auctionTasks.push(newAuctionTask);
-        emit OpenTaskForAuction(newAuctionTask);
+        emit OpenTaskForAuction(
+            _batchTaskId,
+            _auctionDuration,
+            newBatchTaskAuction.taskIds,
+            block.timestamp
+        );
     }
 
     /** 
@@ -74,16 +131,26 @@ contract TaskAuction is ITaskAuction, Ownable {
     //Require time placeBid < time startAuction+duration
     */
     function placeBid(
-        uint _taskID
-    ) public payable checkTaskState(TASK_STATE.OPENFORAUCTION, _taskID) {
+        uint _taskID,
+        uint _batchTaskID,
+        uint _amountBid
+    )
+        public
+        checkBatchTaskState(BATCH_TASK_STATE.OPENFORAUCTION, _batchTaskID)
+    {
         AuctionTask storage auctionTask = taskIdToAuctionTask[_taskID];
         require(auctionTask.taskId == _taskID, "Wrong taskID");
         //Todo: if value bid ==minreward end auction
 
         //Todo: move check balance to bank manager
+
         require(
-            msg.value >= auctionTask.minReward &&
-                msg.value < auctionTask.lowestBidAmount,
+            bankManager.balanceOf(msg.sender, tokenAddress) >= _amountBid,
+            "Your balance not enough"
+        );
+        require(
+            _amountBid >= auctionTask.minReward &&
+                _amountBid < auctionTask.lowestBidAmount,
             "Insufficient bid amount "
         );
         Bid memory bid = _findBid(_taskID, msg.sender);
@@ -92,18 +159,18 @@ contract TaskAuction is ITaskAuction, Ownable {
             bid.taskId = _taskID;
         }
         //increase value bid each time call
-        bid.totalBidAmount += msg.value;
+        bid.totalBidAmount += _amountBid;
         //increase number bid
         bid.numberBid++;
 
         // If current bid is lower than current lowest bid, update lowestBidAmount and lowestBidder
-        if (msg.value < auctionTask.lowestBidAmount) {
-            auctionTask.lowestBidAmount = msg.value;
+        if (_amountBid < auctionTask.lowestBidAmount) {
+            auctionTask.lowestBidAmount = _amountBid;
             auctionTask.lowestBidder = msg.sender;
         }
         taskIdToAuctionTask[_taskID] = auctionTask; //update value in mapping
 
-        //auctionTasks.push(auctionTask);
+        //update in array
         for (uint i = 0; i < auctionTasks.length; i++) {
             if (auctionTasks[i].taskId == _taskID) {
                 auctionTasks[i] = auctionTask;
@@ -112,12 +179,16 @@ contract TaskAuction is ITaskAuction, Ownable {
         }
         //save bid to bids
         bids.push(bid);
-        emit PlaceBid(bid, block.timestamp, msg.value);
+        emit PlaceBid(_taskID, _batchTaskID, _amountBid, block.timestamp);
     }
 
-    function placeMultipleBid(uint[] memory taskIds) public {
+    function placeMultipleBid(
+        uint[] memory taskIds,
+        uint _batchTaskID,
+        uint[] memory _amountBids
+    ) public {
         for (uint i = 0; i < taskIds.length; i++) {
-            placeBid(taskIds[i]);
+            placeBid(taskIds[i], _batchTaskID, _amountBids[i]);
         }
     }
 
@@ -126,31 +197,62 @@ contract TaskAuction is ITaskAuction, Ownable {
         //getAll batchTask with state=OPENFORAUCTION
         //and time Start+duration> time callEndAuction
         bool found = false;
-        for (uint i = 0; i < auctionTasks.length; i++) {
+        for (uint i = 0; i < batchTaskAuctions.length; i++) {
             if (
-                auctionTasks[i].taskState == TASK_STATE.OPENFORAUCTION &&
+                batchTaskAuctions[i].batchTaskState ==
+                BATCH_TASK_STATE.OPENFORAUCTION &&
                 (block.timestamp >
-                    auctionTasks[i].startTime + auctionTasks[i].duration)
+                    batchTaskAuctions[i].startTime +
+                        batchTaskAuctions[i].duration)
             ) {
                 found = true;
-                //check auction Task had user bided
-                if (auctionTasks[i].lowestBidder != address(0)) {
-                    // Assign task to lowest bidder
-                    auctionTasks[i].reward = auctionTasks[i].lowestBidAmount;
-                    auctionTasks[i].doer = auctionTasks[i].lowestBidder;
-                    auctionTasks[i].taskState = TASK_STATE.ASSIGNED;
+                for (uint j = 0; j < batchTaskAuctions[i].taskIds.length; j++) {
+                    //check auction Task had user bided
+                    if (
+                        taskIdToAuctionTask[batchTaskAuctions[i].taskIds[j]]
+                            .lowestBidder != address(0)
+                    ) {
+                        // Assign task to lowest bidder
+                        taskIdToAuctionTask[batchTaskAuctions[i].taskIds[j]]
+                            .reward = taskIdToAuctionTask[
+                            batchTaskAuctions[i].taskIds[j]
+                        ].lowestBidAmount;
+                        taskIdToAuctionTask[batchTaskAuctions[i].taskIds[j]]
+                            .doer = taskIdToAuctionTask[
+                            batchTaskAuctions[i].taskIds[j]
+                        ].lowestBidder;
+                        taskIdToAuctionTask[batchTaskAuctions[i].taskIds[j]]
+                            .taskState = TASK_STATE.ASSIGNED;
 
-                    emit EndAuction(auctionTasks[i], block.timestamp);
-                    // Pay all bidders back their bids
-                    for (uint j = 0; j < bids.length; j++) {
-                        if (bids[j].taskId == auctionTasks[j].taskId) {
-                            payable(bids[j].bidder).transfer(
-                                bids[j].totalBidAmount
-                            );
+                        // Pay all bidders back their bids
+                        for (uint k = 0; k < bids.length; k++) {
+                            if (
+                                bids[k].taskId ==
+                                taskIdToAuctionTask[
+                                    batchTaskAuctions[i].taskIds[j]
+                                ].taskId
+                            ) {
+                                bankManager.transfer(
+                                    tokenAddress,
+                                    bids[k].bidder,
+                                    bids[k].totalBidAmount
+                                );
+                            }
                         }
+                        //call assignTask in Task manager
+                        taskManager.assignTask(
+                            taskIdToAuctionTask[batchTaskAuctions[i].taskIds[j]]
+                        );
+
+                        emit EndAuction(
+                            BATCH_TASK_STATE.ENDAUCTION,
+                            batchTaskAuctions[i].batchTaskId,
+                            taskIdToAuctionTask[
+                                batchTaskAuctions[i].taskIds[j]
+                            ],
+                            block.timestamp
+                        );
                     }
-                    //call assignTask in Task manager
-                    taskManager.assignTask(auctionTasks[i]);
                 }
             }
         }

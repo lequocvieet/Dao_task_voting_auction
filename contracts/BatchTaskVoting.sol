@@ -11,22 +11,29 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     //mapping batchTaskIdToBatchTaskVoting
     mapping(uint => BatchTaskVoting) batchTaskIdToBatchTaskVoting;
 
-    //mapping batchTaskIdToVoterToVoted
-    mapping(uint => mapping(address => bool)) batchTaskIdToVoterToVoted;
+    mapping(uint => PollVoting) pollIdToPoll;
 
-    mapping(uint => mapping(address => bool)) batchTaskIdToVoterToVoteChoice;
+    PollVoting[] public pollVotings;
+
+    mapping(uint => mapping(address => bool)) pollIdToVoterToVoted;
+
+    mapping(uint => mapping(address => uint)) pollIdToVoterToPreviousVote;
+
+    mapping(uint => mapping(uint => int256)) batchTaskIdToPollIdToPreviousResult;
 
     //Array to store all BatchTaskVoting on vote and voted
     BatchTaskVoting[] public batchTasks;
 
     event OpenForVote(
-        uint _batchTaskID,
+        uint _pollId,
+        uint[] _batchTaskID,
         uint _voteDuration,
-        BATCH_TASK_STATE batchTaskState,
+        POLL_STATE _pollState,
         uint timeStart
     );
 
     event VoteOnBatchTask(
+        uint _pollId,
         BatchTaskVoting batchTaskVoted,
         uint voteTime,
         address indexed voter
@@ -34,16 +41,17 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
 
     event Notify(string notify);
 
-    event EndVote(BatchTaskVoting[] batchTaskCanEnd, uint endTime);
+    event EndVote(
+        uint pollId,
+        POLL_STATE pollState,
+        BatchTaskVoting batchTaskCanEnd,
+        uint endTime
+    );
 
-    modifier checkBatchTaskState(
-        BATCH_TASK_STATE requiredState,
-        uint _batchTaskID
-    ) {
+    modifier checkPollState(POLL_STATE requiredState, uint _pollID) {
         require(
-            batchTaskIdToBatchTaskVoting[_batchTaskID].batchTaskState ==
-                requiredState,
-            "Error: Invalid Batch Task Voting state!"
+            pollIdToPoll[_pollID].pollState == requiredState,
+            "Error: Invalid Poll state!"
         );
         _;
     }
@@ -53,112 +61,112 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     }
 
     //Todo: onlyCall by TaskManager to open for vote
-    function openForVote(uint _batchTaskID, uint _voteDuration) external {
-        address[] memory _voters;
-        BatchTaskVoting memory newBatchTask = BatchTaskVoting({
-            batchTaskId: _batchTaskID,
-            batchTaskState: BATCH_TASK_STATE.OPENFORVOTE,
-            totalVote: 0,
-            result: 0, // initialize result=0
+    function openPollForVote(
+        uint _pollId,
+        uint _voteDuration,
+        uint[] memory _batchTaskids
+    ) external {
+        PollVoting memory newPoll = PollVoting({
+            pollId: _pollId,
             voteDuration: _voteDuration,
             startTime: block.timestamp,
-            voters: _voters
+            batchTaskIds: _batchTaskids,
+            pollState: POLL_STATE.OPENFORVOTE
         });
-        //save to mapping
-        batchTaskIdToBatchTaskVoting[_batchTaskID] = newBatchTask;
-
-        //save to array
-        batchTasks.push(newBatchTask);
+        pollIdToPoll[_pollId] = newPoll;
+        pollVotings.push(newPoll);
+        for (uint i = 0; i < _batchTaskids.length; i++) {
+            address[] memory _voters;
+            BatchTaskVoting memory newBatchTask = BatchTaskVoting({
+                batchTaskId: _batchTaskids[i],
+                result: 0, // initialize result=0
+                voters: _voters
+            });
+            batchTaskIdToBatchTaskVoting[_batchTaskids[i]] = newBatchTask;
+            batchTasks.push(newBatchTask);
+        }
         emit OpenForVote(
-            _batchTaskID,
+            _pollId,
+            _batchTaskids,
             _voteDuration,
-            BATCH_TASK_STATE.OPENFORVOTE,
+            POLL_STATE.OPENFORVOTE,
             block.timestamp
         );
     }
 
     /**
      *User call this function to vote on batchTask
-     *Require batchTask state=OPENFORVOTE
+     *Require Poll state=OPENFORVOTE
      *require time.vote > timeOpenForVote
      *Require each user can vote 1 times
      */
     function voteOnBatchTask(
         uint _batchTaskID,
-        bool _choice
-    ) public checkBatchTaskState(BATCH_TASK_STATE.OPENFORVOTE, _batchTaskID) {
-        //iterate through list of batchTasks in array
-        //find baskTask by Id
-        for (uint i = 0; i < batchTasks.length; i++) {
-            if (batchTasks[i].batchTaskId == _batchTaskID) {
-                require(
-                    block.timestamp >= batchTasks[i].startTime &&
-                        block.timestamp <=
-                        batchTasks[i].startTime + batchTasks[i].voteDuration,
-                    "Voting is end or not open yet"
-                );
+        uint _pollId
+    ) public checkPollState(POLL_STATE.OPENFORVOTE, _pollId) {
+        require(
+            block.timestamp >= pollIdToPoll[_pollId].startTime &&
+                block.timestamp <=
+                pollIdToPoll[_pollId].startTime +
+                    pollIdToPoll[_pollId].voteDuration,
+            "Poll Voting is end"
+        );
 
-                //Vote again
-                if (
-                    batchTaskIdToVoterToVoted[_batchTaskID][msg.sender] == true
-                ) {
-                    if (
-                        batchTaskIdToVoterToVoteChoice[_batchTaskID][
-                            msg.sender
-                        ] != _choice
-                    ) {
-                        //change vote choice
-                        if (_choice) {
-                            //Yes
-                            batchTasks[i].result = batchTasks[i].result + 2;
-                        } else {
-                            //No
-                            batchTasks[i].result = batchTasks[i].result - 2;
-                        }
-                        batchTaskIdToVoterToVoteChoice[_batchTaskID][
-                            msg.sender
-                        ] = _choice;
-                        //update to mapping
-                        batchTaskIdToBatchTaskVoting[_batchTaskID] = batchTasks[
-                            i
-                        ];
-                        emit VoteOnBatchTask(
-                            batchTasks[i],
-                            block.timestamp,
-                            msg.sender
-                        );
-                    } else {
-                        //nothing change
-                        break;
-                    }
-                }
-                if (_choice) {
-                    //Yes
-                    batchTasks[i].result++;
-                } else {
-                    //No
-                    batchTasks[i].result--;
-                }
-                batchTasks[i].voters.push(msg.sender);
-                batchTasks[i].totalVote++;
-
-                batchTaskIdToVoterToVoted[_batchTaskID][msg.sender] = true;
-                batchTaskIdToVoterToVoteChoice[_batchTaskID][
-                    msg.sender
-                ] = _choice;
-                //update to mapping
-                batchTaskIdToBatchTaskVoting[_batchTaskID] = batchTasks[i];
-
-                emit VoteOnBatchTask(
-                    batchTasks[i],
-                    block.timestamp,
-                    msg.sender
-                );
-
-                //because id is unique, if found no need to loop anymore
-                break;
+        if (pollIdToVoterToVoted[_pollId][msg.sender] == true) {
+            //Vote again
+            require(
+                pollIdToVoterToPreviousVote[_pollId][msg.sender] !=
+                    _batchTaskID,
+                "You not change your vote"
+            );
+            for (
+                uint i = 0;
+                i < pollIdToPoll[_pollId].batchTaskIds.length;
+                i++
+            ) {
+                //revert previous result
+                batchTaskIdToBatchTaskVoting[
+                    pollIdToPoll[_pollId].batchTaskIds[i]
+                ].result = batchTaskIdToPollIdToPreviousResult[
+                    pollIdToPoll[_pollId].batchTaskIds[i]
+                ][_pollId];
             }
         }
+
+        for (uint j = 0; j < pollIdToPoll[_pollId].batchTaskIds.length; j++) {
+            batchTaskIdToBatchTaskVoting[pollIdToPoll[_pollId].batchTaskIds[j]]
+                .voters
+                .push(msg.sender);
+            batchTaskIdToPollIdToPreviousResult[
+                pollIdToPoll[_pollId].batchTaskIds[j]
+            ][_pollId] = batchTaskIdToBatchTaskVoting[
+                pollIdToPoll[_pollId].batchTaskIds[j]
+            ].result;
+
+            if (
+                batchTaskIdToBatchTaskVoting[
+                    pollIdToPoll[_pollId].batchTaskIds[j]
+                ].batchTaskId != _batchTaskID
+            ) {
+                //Vote no for others batch in poll
+                batchTaskIdToBatchTaskVoting[
+                    pollIdToPoll[_pollId].batchTaskIds[j]
+                ].result--;
+            } else {
+                //vote yes
+                batchTaskIdToBatchTaskVoting[
+                    pollIdToPoll[_pollId].batchTaskIds[j]
+                ].result++;
+            }
+        }
+        pollIdToVoterToPreviousVote[_pollId][msg.sender] = _batchTaskID;
+        pollIdToVoterToVoted[_pollId][msg.sender] = true;
+        emit VoteOnBatchTask(
+            _pollId,
+            batchTaskIdToBatchTaskVoting[_batchTaskID],
+            block.timestamp,
+            msg.sender
+        );
     }
 
     /**
@@ -166,43 +174,56 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
      *Only batchTask with State=OPENFORVOTE and is due(endVote time > start vote+duration)
      */
     function endVote() external {
-        BatchTaskVoting[] memory batchTaskCanEnd = new BatchTaskVoting[](
-            batchTasks.length
-        ); //initialize empty batchTask
-        uint count = 0;
         bool found = false;
-        for (uint i = 0; i < batchTasks.length; i++) {
+        for (uint i = 0; i < pollVotings.length; i++) {
             if (
-                batchTasks[i].batchTaskState == BATCH_TASK_STATE.OPENFORVOTE &&
-                ((batchTasks[i].startTime + batchTasks[i].voteDuration) <
+                pollVotings[i].pollState == POLL_STATE.OPENFORVOTE &&
+                ((pollVotings[i].startTime + pollVotings[i].voteDuration) <
                     block.timestamp)
             ) {
-                batchTasks[i].batchTaskState = BATCH_TASK_STATE.VOTED;
-                batchTaskCanEnd[count] = batchTasks[i];
-                count++;
                 found = true;
+                pollVotings[i].pollState = POLL_STATE.VOTED;
+                int256 max = batchTaskIdToBatchTaskVoting[
+                    pollVotings[i].batchTaskIds[0]
+                ].result;
+                for (uint j = 1; j < pollVotings[i].batchTaskIds.length; j++) {
+                    if (
+                        batchTaskIdToBatchTaskVoting[
+                            pollVotings[i].batchTaskIds[j]
+                        ].result > max
+                    ) {
+                        max = batchTaskIdToBatchTaskVoting[
+                            pollVotings[i].batchTaskIds[j]
+                        ].result;
+                    }
+                    emit EndVote(
+                        pollVotings[i].pollId,
+                        POLL_STATE.VOTED,
+                        batchTaskIdToBatchTaskVoting[
+                            pollVotings[i].batchTaskIds[j]
+                        ],
+                        block.timestamp
+                    );
+                }
+                //Choose batchTask with higher results
+                for (uint k = 0; k < pollVotings[i].batchTaskIds.length; k++) {
+                    if (
+                        max ==
+                        batchTaskIdToBatchTaskVoting[
+                            pollVotings[i].batchTaskIds[k]
+                        ].result
+                    ) {
+                        //Call to taskManager
+                        taskManager.initBatchTaskAuction(
+                            pollVotings[i].batchTaskIds[k]
+                        );
+                        break;
+                    }
+                }
             }
         }
-        if (found == true) {
-            int256 max = batchTaskCanEnd[0].result;
-            for (uint i = 1; i < batchTaskCanEnd.length; i++) {
-                if (batchTaskCanEnd[i].result > max) {
-                    max = batchTaskCanEnd[i].result;
-                }
-            }
-            emit EndVote(batchTaskCanEnd, block.timestamp);
-            //Choose batchTask with higher results
-            for (uint i = 0; i < batchTaskCanEnd.length; i++) {
-                if (max == batchTaskCanEnd[i].result) {
-                    //Call to taskManager
-                    taskManager.initBatchTaskAuction(
-                        batchTaskCanEnd[i].batchTaskId
-                    );
-                    break;
-                }
-            }
-        } else {
-            emit Notify("There are no Voting can end at the moment");
+        if (found == false) {
+            emit Notify("There are no Poll Voting can end at the moment");
         }
     }
 }

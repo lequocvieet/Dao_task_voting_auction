@@ -15,13 +15,22 @@ interface ITaskAuction {
         TASK_STATE taskState;
         uint lowestBidAmount;
         address lowestBidder;
+    }
+
+    struct BatchTaskAuction {
+        uint batchTaskId;
+        uint[] taskIds;
         uint duration;
         uint startTime;
+        BATCH_TASK_STATE batchTaskState;
+    }
+
+    enum BATCH_TASK_STATE {
+        OPENFORAUCTION,
+        ENDAUCTION
     }
 
     enum TASK_STATE {
-        //Do not have CREATED because Task created at backend
-        //DO not have OPENFORVOTE because that blongs to batchTask not specific task
         OPENFORAUCTION,
         ASSIGNED,
         RECEIVED,
@@ -39,14 +48,27 @@ interface ITaskAuction {
 
     function setTaskManager(address _taskManagerAddress) external;
 
+    function chooseToken(address _tokenAddress) external;
+
+    function setBankManager(address _bankManagerAddress) external;
+
     function openTaskForAuction(
-        ITaskManager.Task memory _task,
-        uint __auctionDuration
+        ITaskManager.Task[] memory _tasks,
+        uint _batchTaskId,
+        uint _auctionDuration
     ) external;
 
-    function placeBid(uint _taskID) external payable;
+    function placeBid(
+        uint _taskID,
+        uint _batchTaskID,
+        uint _amountBid
+    ) external;
 
     function endAuction() external;
 
-    function placeMultipleBid(uint[] memory taskIds) external;
+    function placeMultipleBid(
+        uint[] memory taskIds,
+        uint _batchTaskID,
+        uint[] memory _amountBids
+    ) external;
 }
