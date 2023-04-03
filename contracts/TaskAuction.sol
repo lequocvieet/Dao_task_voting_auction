@@ -40,9 +40,15 @@ contract TaskAuction is ITaskAuction, Ownable {
 
     event Notify(string notify);
 
+    event AssignTask(
+        uint indexed batchTaskId,
+        AuctionTask taskAssigned,
+        uint assignTime
+    );
+
     event EndAuction(
         BATCH_TASK_STATE batchTaskState,
-        uint batchTaskId,
+        uint indexed batchTaskId,
         AuctionTask auctionTask,
         uint endTime
     );
@@ -235,10 +241,6 @@ contract TaskAuction is ITaskAuction, Ownable {
                                     batchTaskAuctions[i].taskIds[j]
                                 ].taskId
                             ) {
-                                console.log(
-                                    "total Bid Amount",
-                                    bids[k].totalBidAmount
-                                );
                                 bankManager.transfer(
                                     address(bankManager),
                                     tokenAddress,
@@ -251,7 +253,6 @@ contract TaskAuction is ITaskAuction, Ownable {
                         taskManager.assignTask(
                             taskIdToAuctionTask[batchTaskAuctions[i].taskIds[j]]
                         );
-
                         emit EndAuction(
                             BATCH_TASK_STATE.ENDAUCTION,
                             batchTaskAuctions[i].batchTaskId,

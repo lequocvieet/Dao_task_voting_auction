@@ -173,6 +173,9 @@ async function main() {
   let batchTasks = await taskManager.getAllBatchTaskByPollID(1);
   console.log("batchTasks", batchTasks);
 
+  let tasks = await taskManager.getAllTask(1);
+  console.log("tasks in batch1", tasks);
+
   //------------------------------------------Test Logic VOTING--------------------------------------
 
   //open poll for vote at task manager 1000s
@@ -195,12 +198,19 @@ async function main() {
   await batchTaskVoting.endVote();
 
   //Filter EndVote event
-  //get event
   filter = batchTaskVoting.filters.EndVote(1, null, null, null);
-
   const results = await batchTaskVoting.queryFilter(filter);
-  console.log("EndVote event:", results[0].args.batchTaskCanEnd);
-  console.log("EndVote event:", results[1].args.batchTaskCanEnd);
+
+  results.map((event) => {
+    event = event.args;
+    let batchTaskVoted = {
+      pollId: event.pollId.toString(),
+      pollState: event.pollState,
+      batchTaskCanEnd: event.batchTaskCanEnd,
+      endTime: event.endTime,
+    };
+    console.log("batchTaskVoted", batchTaskVoted);
+  });
 
   // //------------------------------------------Test Logic AUCTION--------------------------------------
 
@@ -211,6 +221,7 @@ async function main() {
   //account 5 place bid 80 wei on same task to kick account4 out
   await taskAuction.connect(account4).placeBid(1, 1, 90);
   await taskAuction.connect(account5).placeBid(1, 1, 80);
+  await taskAuction.connect(account4).placeBid(2, 1, 80);
 
   //Call end Auction at TaskAuction too soon to success
   await taskAuction.endAuction();
@@ -219,17 +230,41 @@ async function main() {
   await time.increase(2000);
   await taskAuction.endAuction();
 
-  // //After endAuction account4 must get back money
-  // //and account 5 assigned Task1 and have permission to call receive task later
+  //Filter EndAuction event
+  filterEndAuction = taskAuction.filters.EndAuction(null, 1, null, null);
 
-  // await taskManager.connect(account5).receiveTask(1);
+  const resultsFilter = await taskAuction.queryFilter(filterEndAuction);
+  resultsFilter.map((event) => {
+    event = event.args;
+    let EndAuctionTask = {
+      batchTaskState: event.batchTaskState,
+      batchTaskId: event.batchTaskId,
+      auctionTask: event.auctionTask,
+      endTime: event.endTime,
+    };
+    console.log("EndAuctionTask", EndAuctionTask);
+  });
+  //After endAuction account4 must get back money
+  //Account5 calculate amount token need to commit
+  await creditScore.calculateCommitmentToken(account5.address);
+  filterCommitToken = creditScore.filters.CalculateCommitmentToken(
+    account5.address,
+    null
+  );
+  const resultsEvent = await creditScore.queryFilter(filterCommitToken);
 
-  // //User submit TaskResult
-  // await taskManager.connect(account5).submitTaskResult(1);
+  console.log("commitment Token account5", resultsEvent[0].args.value);
+  //Account 5 assigned Task1 and have permission to call receive task later
+  await taskManager
+    .connect(account5)
+    .receiveTask(1, resultsEvent[0].args.value);
 
-  // //Reviewer submit review Result
-  // //Reviewer of task1 is account3 70% task Done
-  // await taskManager.connect(account3).submitReview(1, 70);
+  //User submit TaskResult
+  await taskManager.connect(account5).submitTaskResult(1);
+
+  //Reviewer submit review Result
+  //Reviewer of task1 is account3 70% task Done
+  await taskManager.connect(account3).submitReview(1, 70);
 
   //Todo: Some one want to extend their task
 

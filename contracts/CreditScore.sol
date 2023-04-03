@@ -19,12 +19,18 @@ contract CreditScore is ICreditScore {
         uint timeSave
     );
 
+    event CalculateCommitmentToken(address indexed user, uint value);
+
     //Todo:only call internal of this contract
     //Todo: exponential case
     function calculateScoreByPercentTaskDone(
         address _userAddress
     ) public override returns (uint) {
         //iterate through all taskDone
+        if (userAddressToUser[_userAddress].userAddress == address(0)) {
+            //no data before
+            return 50; //initialize value score
+        }
         for (
             uint i = 0;
             i < userAddressToUser[_userAddress].taskDoneIds.length;
@@ -65,6 +71,7 @@ contract CreditScore is ICreditScore {
             uint[] memory taskDoneIds = new uint[](10000);
             taskDoneIds[0] = _taskId;
             user.userAddress = _doer;
+            user.score = 50; //initialize 50
             user.taskDoneIds = taskDoneIds;
             taskDoneIdTaskDone[_taskId].percentageDone = _percentageDone;
             userAddressToUser[_doer] = user;
@@ -80,6 +87,8 @@ contract CreditScore is ICreditScore {
         uint userScore = calculateScoreByPercentTaskDone(_user);
         //And calculate score respectively
         uint commitmentToken = userScore * 2; //this rule can change in the future
+        console.log(commitmentToken);
+        emit CalculateCommitmentToken(_user, commitmentToken);
         return commitmentToken;
     }
 }

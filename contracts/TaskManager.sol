@@ -310,6 +310,12 @@ contract TaskManager is ITaskManager, Ownable {
             _commitValue >= commitmentToken,
             "Not provide enough money to receive task!"
         );
+        bankManager.transfer(
+            msg.sender,
+            tokenAddress,
+            address(bankManager),
+            _commitValue
+        );
         taskIdToTask[_taskId].taskState = TASK_STATE.RECEIVED;
         taskIdToTask[_taskId].timeDoerReceive = block.timestamp;
         emit ReceiveTask(
@@ -432,5 +438,21 @@ contract TaskManager is ITaskManager, Ownable {
             listPolls[i] = pollIdToPoll[i + 1];
         }
         return listPolls;
+    }
+
+    function getAllTask(uint _batchTaskId) public view returns (Task[] memory) {
+        Task[] memory listTasks = new Task[](
+            batchTaskIdToBatchTask[_batchTaskId].taskIds.length
+        );
+        for (
+            uint i = 0;
+            i < batchTaskIdToBatchTask[_batchTaskId].taskIds.length;
+            i++
+        ) {
+            listTasks[i] = taskIdToTask[
+                batchTaskIdToBatchTask[_batchTaskId].taskIds[i]
+            ];
+        }
+        return listTasks;
     }
 }
