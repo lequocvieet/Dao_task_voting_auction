@@ -245,7 +245,9 @@ contract TaskManager is ITaskManager, Ownable {
     ) external checkBatchTaskState(BATCH_TASK_STATE.VOTED, _batchTaskID) {
         batchTaskIdToBatchTask[_batchTaskID].batchTaskState = BATCH_TASK_STATE
             .OPENFORAUCTION;
-        Task[] memory auctionTasks;
+        Task[] memory auctionTasks = new Task[](
+            batchTaskIdToBatchTask[_batchTaskID].taskIds.length
+        );
         console.log(
             "length",
             batchTaskIdToBatchTask[_batchTaskID].taskIds.length

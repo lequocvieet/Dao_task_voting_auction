@@ -65,6 +65,9 @@ async function main() {
   //TaskManager set TaskAuction
   await taskManager.setTaskAuction(taskAuction.address);
 
+  //TaskManager set BankManager
+  await taskManager.setBankManager(bankManager.address);
+
   //Taskmanager set Token use
   await taskManager.chooseToken(token.address);
 
@@ -73,6 +76,9 @@ async function main() {
 
   //TaskAuction setTaskManager
   await taskAuction.setTaskManager(taskManager.address);
+
+  //TaskAuction set BankManager
+  await taskAuction.setBankManager(bankManager.address);
 
   //TaskAuction set Token use
   await taskAuction.chooseToken(token.address);
@@ -115,6 +121,12 @@ async function main() {
   await bankManager.mint(
     token.address,
     account4.address,
+    ethers.utils.parseEther("100")
+  );
+
+  await bankManager.mint(
+    token.address,
+    account5.address,
     ethers.utils.parseEther("100")
   );
 
@@ -187,19 +199,18 @@ async function main() {
   filter = batchTaskVoting.filters.EndVote(1, null, null, null);
 
   const results = await batchTaskVoting.queryFilter(filter);
-  console.log("results", results);
   console.log("EndVote event:", results[0].args.batchTaskCanEnd);
+  console.log("EndVote event:", results[1].args.batchTaskCanEnd);
 
   // //------------------------------------------Test Logic AUCTION--------------------------------------
 
   //open for Auction batchTask1 with 1000s duration
   await taskManager.openBatchTaskForAuction(1, 1000);
 
-  // //user place bid on each task in TaskAuction
-  // //account 4 place bid 90wei on task1 of batchTask1 with current reward=100wei
-  // //account 5 place bid 80 wei on same task to kick account4 out
-  // await taskAuction.connect(account4).placeBid(1, { value: 90 });
-  // await taskAuction.connect(account5).placeBid(1, { value: 80 });
+  //account 4 place bid 90wei on task1 of batchTask1 with current reward=100wei
+  //account 5 place bid 80 wei on same task to kick account4 out
+  await taskAuction.connect(account4).placeBid(1, 1, 90);
+  await taskAuction.connect(account5).placeBid(1, 1, 80);
 
   // //Call end Auction at TaskAuction too soon to success
   // //await taskAuction.endAuction();

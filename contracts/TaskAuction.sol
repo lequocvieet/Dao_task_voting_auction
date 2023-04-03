@@ -85,7 +85,7 @@ contract TaskAuction is ITaskAuction, Ownable {
         uint _batchTaskId,
         uint _auctionDuration
     ) public {
-        uint[] memory _taskIds = new uint[](10000);
+        uint[] memory _taskIds = new uint[](_tasks.length);
         for (uint i = 0; i < _tasks.length; i++) {
             address payable _lowestBidder;
             AuctionTask memory newAuctionTask = AuctionTask({
@@ -143,7 +143,6 @@ contract TaskAuction is ITaskAuction, Ownable {
         //Todo: if value bid ==minreward end auction
 
         //Todo: move check balance to bank manager
-
         require(
             bankManager.balanceOf(msg.sender, tokenAddress) >= _amountBid,
             "Your balance not enough"

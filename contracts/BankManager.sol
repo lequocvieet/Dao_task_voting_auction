@@ -4,8 +4,9 @@
 pragma solidity ^0.8.0;
 
 import "./Token.sol";
+import "./interfaces/IBankManager.sol";
 
-contract BankManager {
+contract BankManager is IBankManager {
     address private owner;
     mapping(address => mapping(address => uint)) private balances; // mapping of user addresses to token addresses to balances
 

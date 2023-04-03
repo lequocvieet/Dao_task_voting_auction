@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 
 interface IBankManager {
-    function mint(address tokenAddress, uint amount) external;
+    function mint(address tokenAddress, address to, uint amount) external;
 
     function burn(address tokenAddress, uint amount) external;
 
