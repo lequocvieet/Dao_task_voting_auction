@@ -2,7 +2,6 @@ pragma solidity ^0.8.17;
 import "./ITaskAuction.sol";
 
 interface ITaskManager {
-    // Struct to define the properties of the task object
     struct Task {
         uint taskId;
         uint point; //point is caculated by durations 1 point=4 hour

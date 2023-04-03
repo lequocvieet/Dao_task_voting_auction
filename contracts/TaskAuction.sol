@@ -85,12 +85,13 @@ contract TaskAuction is ITaskAuction, Ownable {
         bankManager = IBankManager(_bankManagerAddress);
     }
 
-    //Todo:only call by taskManager
+    //only call by taskManager
     function openTaskForAuction(
         ITaskManager.Task[] memory _tasks,
         uint _batchTaskId,
         uint _auctionDuration
     ) public {
+        require(msg.sender == address(taskManager), "Only call by TaskManager");
         uint[] memory _taskIds = new uint[](_tasks.length);
         for (uint i = 0; i < _tasks.length; i++) {
             address payable _lowestBidder;
@@ -177,7 +178,8 @@ contract TaskAuction is ITaskAuction, Ownable {
             auctionTask.lowestBidAmount = _amountBid;
             auctionTask.lowestBidder = msg.sender;
         }
-        taskIdToAuctionTask[_taskID] = auctionTask; //update value in mapping
+        //update value in mapping
+        taskIdToAuctionTask[_taskID] = auctionTask;
 
         //update in array
         for (uint i = 0; i < auctionTasks.length; i++) {
@@ -201,10 +203,10 @@ contract TaskAuction is ITaskAuction, Ownable {
         }
     }
 
-    //Todo: only call by keeper
+    //Todo: only call by keeper(cronjob)
+    //getAll batchTask with state=OPENFORAUCTION
+    //and time Start+duration> time callEndAuction
     function endAuction() public {
-        //getAll batchTask with state=OPENFORAUCTION
-        //and time Start+duration> time callEndAuction
         bool found = false;
         for (uint i = 0; i < batchTaskAuctions.length; i++) {
             if (

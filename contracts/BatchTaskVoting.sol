@@ -25,7 +25,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     BatchTaskVoting[] public batchTasks;
 
     event OpenForVote(
-        uint _pollId,
+        uint indexed _pollId,
         uint[] _batchTaskID,
         uint _voteDuration,
         POLL_STATE _pollState,
@@ -33,7 +33,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     );
 
     event VoteOnBatchTask(
-        uint _pollId,
+        uint indexed _pollId,
         BatchTaskVoting batchTaskVoted,
         uint voteTime,
         address indexed voter
@@ -60,12 +60,13 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
         taskManager = ITaskManager(_taskManagerAddress);
     }
 
-    //Todo: onlyCall by TaskManager to open for vote
+    //OnlyCall by TaskManager to open for vote
     function openPollForVote(
         uint _pollId,
         uint _voteDuration,
         uint[] memory _batchTaskids
     ) external {
+        require(msg.sender == address(taskManager), "Only call by TaskManager");
         PollVoting memory newPoll = PollVoting({
             pollId: _pollId,
             voteDuration: _voteDuration,
@@ -98,7 +99,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
      *User call this function to vote on batchTask
      *Require Poll state=OPENFORVOTE
      *require time.vote > timeOpenForVote
-     *Require each user can vote 1 times
+     *Each user can vote many times
      */
     function voteOnBatchTask(
         uint _batchTaskID,
@@ -172,7 +173,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     }
 
     /**
-     *ToDo:only vote creator who create this vote
+     *ToDo:only call by keeper()
      *Only batchTask with State=OPENFORVOTE and is due(endVote time > start vote+duration)
      */
     function endVote() external {

@@ -81,11 +81,10 @@ contract CreditScore is ICreditScore {
         emit SaveTaskDone(_taskId, _doer, _percentageDone, block.timestamp);
     }
 
-    // Function to calculate commitment token based on credit score
+    //Calculate commitment token based on credit score
     function calculateCommitmentToken(address _user) public returns (uint) {
         //getCreditScore of user
         uint userScore = calculateScoreByPercentTaskDone(_user);
-        //And calculate score respectively
         uint commitmentToken = userScore * 2; //this rule can change in the future
         console.log(commitmentToken);
         emit CalculateCommitmentToken(_user, commitmentToken);

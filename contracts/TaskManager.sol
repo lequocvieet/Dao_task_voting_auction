@@ -1,4 +1,3 @@
-// Solidity version used for the contract
 pragma solidity ^0.8.17;
 import "./interfaces/ITaskManager.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -8,9 +7,6 @@ import "./interfaces/ICreditScore.sol";
 import "./interfaces/IBankManager.sol";
 import "hardhat/console.sol";
 
-//Todo: receive money bid at taskAuction but pay back at TaskManager
-//Todo=> move all things relate to money to BankManager in ver2
-//Todo: change ETH to own token from bank ver2
 contract TaskManager is ITaskManager, Ownable {
     ITaskAuction public taskAuction;
 
@@ -135,6 +131,14 @@ contract TaskManager is ITaskManager, Ownable {
         _;
     }
 
+    modifier checkPollState(POLL_STATE requiredState, uint _pollID) {
+        require(
+            pollIdToPoll[_pollID].pollState == requiredState,
+            "Error: Invalid Poll State"
+        );
+        _;
+    }
+
     function setTaskAuction(address _taskAuctionAddress) external onlyOwner {
         taskAuction = ITaskAuction(_taskAuctionAddress);
     }
@@ -212,10 +216,14 @@ contract TaskManager is ITaskManager, Ownable {
     }
 
     //Open Poll for vote
-    //Todo:should call by onlyOwner?
-    //Todo: require state
-    //Todo: check pollId exist
-    function openPollForVote(uint _pollId, uint _voteDuration) public {
+    function openPollForVote(
+        uint _pollId,
+        uint _voteDuration
+    ) public checkPollState(POLL_STATE.CREATED, _pollId) {
+        require(
+            msg.sender == pollIdToPoll[_pollId].pollOwner,
+            "You not own this Poll"
+        );
         pollIdToPoll[_pollId].pollState = POLL_STATE.OPENFORVOTE;
         batchTaskVoting.openPollForVote(
             _pollId,
@@ -231,14 +239,17 @@ contract TaskManager is ITaskManager, Ownable {
         );
     }
 
-    //Todo:OnlyCall by BatchTaskVoting after done vote
+    //Only call by BatchTaskVoting after done vote
     function initBatchTaskAuction(uint _batchTaskId) external {
+        require(
+            msg.sender == address(batchTaskVoting),
+            "Only call by BatchTaskVoting"
+        );
         batchTaskIdToBatchTask[_batchTaskId].batchTaskState = BATCH_TASK_STATE
             .VOTED;
     }
 
-    //Todo: only call by who?
-    //Todo: checkID exist
+    //Todo: only call by batchTask Owner
     function openBatchTaskForAuction(
         uint _batchTaskID,
         uint _auctionDuration
@@ -246,10 +257,6 @@ contract TaskManager is ITaskManager, Ownable {
         batchTaskIdToBatchTask[_batchTaskID].batchTaskState = BATCH_TASK_STATE
             .OPENFORAUCTION;
         Task[] memory auctionTasks = new Task[](
-            batchTaskIdToBatchTask[_batchTaskID].taskIds.length
-        );
-        console.log(
-            "length",
             batchTaskIdToBatchTask[_batchTaskID].taskIds.length
         );
         for (
@@ -261,7 +268,6 @@ contract TaskManager is ITaskManager, Ownable {
                 batchTaskIdToBatchTask[_batchTaskID].taskIds[i]
             ];
         }
-        console.log("auctionTask length", auctionTasks.length);
         taskAuction.openTaskForAuction(
             auctionTasks,
             _batchTaskID,
@@ -275,10 +281,11 @@ contract TaskManager is ITaskManager, Ownable {
         );
     }
 
-    //Todo:OnlyCall by TaskAuction after done auction
+    //OnlyCall by TaskAuction after done auction
     function assignTask(
         ITaskAuction.AuctionTask memory doneAuctionTask
     ) public {
+        require(msg.sender == address(taskAuction), "Only call by TaskAuction");
         taskIdToTask[doneAuctionTask.taskId].reward = doneAuctionTask.reward;
         taskIdToTask[doneAuctionTask.taskId].doer = doneAuctionTask.doer;
         taskIdToTask[doneAuctionTask.taskId].taskState = TASK_STATE.ASSIGNED;
@@ -352,7 +359,6 @@ contract TaskManager is ITaskManager, Ownable {
     //require task state=SUBMITED
     //Reviewer choose % work load done to decide which %reward would be send to doer
     //After Submit revieww=> transfer money for doer
-    //=> change task state to REVIEWED
     //=> Todo: leaf over money would send to bank manager reserve for many tasks later
     */
     function submitReview(

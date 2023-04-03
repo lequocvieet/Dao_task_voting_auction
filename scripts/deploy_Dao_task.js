@@ -179,7 +179,7 @@ async function main() {
   //------------------------------------------Test Logic VOTING--------------------------------------
 
   //open poll for vote at task manager 1000s
-  await taskManager.openPollForVote(1, 1000);
+  await taskManager.connect(account1).openPollForVote(1, 1000);
 
   //account4 vote on batchTask2
   await batchTaskVoting.connect(account4).voteOnBatchTask(2, 1);
