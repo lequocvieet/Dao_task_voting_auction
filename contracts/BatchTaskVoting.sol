@@ -134,9 +134,11 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
         }
 
         for (uint j = 0; j < pollIdToPoll[_pollId].batchTaskIds.length; j++) {
-            batchTaskIdToBatchTaskVoting[pollIdToPoll[_pollId].batchTaskIds[j]]
-                .voters
-                .push(msg.sender);
+            if (pollIdToVoterToVoted[_pollId][msg.sender] != true) {
+                batchTaskIdToBatchTaskVoting[
+                    pollIdToPoll[_pollId].batchTaskIds[j]
+                ].voters.push(msg.sender);
+            }
             batchTaskIdToPollIdToPreviousResult[
                 pollIdToPoll[_pollId].batchTaskIds[j]
             ][_pollId] = batchTaskIdToBatchTaskVoting[

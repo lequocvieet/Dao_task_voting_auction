@@ -169,8 +169,11 @@ async function main() {
   //account4 vote on batchTask 1
   await batchTaskVoting.connect(account4).voteOnBatchTask(1, 1);
 
-  //vote again
+  //vote again change to batchTask2
   await batchTaskVoting.connect(account4).voteOnBatchTask(2, 1);
+
+  //account5 vote on batchTask 2
+  await batchTaskVoting.connect(account5).voteOnBatchTask(2, 1);
 
   //call endvote at batchTaskVoting too soon
   await batchTaskVoting.endVote();
@@ -184,12 +187,12 @@ async function main() {
   filter = batchTaskVoting.filters.EndVote(null, null, null, null);
 
   const results = await batchTaskVoting.queryFilter(filter);
-  console.log("EndVote event:", results[0].args);
+  console.log("EndVote event:", results[0].args.batchTaskCanEnd);
 
   // //------------------------------------------Test Logic AUCTION--------------------------------------
 
-  // //open for Auction batchTask1 with 1000s duration
-  // await taskManager.openBatchTaskForAuction(1, 1000);
+  //open for Auction batchTask2 with 1000s duration
+  await taskManager.openBatchTaskForAuction(2, 1000);
 
   // //user place bid on each task in TaskAuction
   // //account 4 place bid 90wei on task1 of batchTask1 with current reward=100wei

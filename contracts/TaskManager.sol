@@ -246,6 +246,10 @@ contract TaskManager is ITaskManager, Ownable {
         batchTaskIdToBatchTask[_batchTaskID].batchTaskState = BATCH_TASK_STATE
             .OPENFORAUCTION;
         Task[] memory auctionTasks;
+        console.log(
+            "length",
+            batchTaskIdToBatchTask[_batchTaskID].taskIds.length
+        );
         for (
             uint i = 0;
             i < batchTaskIdToBatchTask[_batchTaskID].taskIds.length;
@@ -255,6 +259,7 @@ contract TaskManager is ITaskManager, Ownable {
                 batchTaskIdToBatchTask[_batchTaskID].taskIds[i]
             ];
         }
+        console.log("auctionTask length", auctionTasks.length);
         taskAuction.openTaskForAuction(
             auctionTasks,
             _batchTaskID,
