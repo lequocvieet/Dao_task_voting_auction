@@ -25,9 +25,13 @@ contract BankManager {
         _;
     }
 
-    function mint(address tokenAddress, uint amount) public onlyOwner {
-        Token(tokenAddress).mint(address(this), amount); // Mint new tokens and add them to the contract's balance
-        balances[address(this)][tokenAddress] += amount;
+    function mint(
+        address tokenAddress,
+        address to,
+        uint amount
+    ) public onlyOwner {
+        Token(tokenAddress).mint(to, amount); // Mint new tokens and add them to the contract's balance
+        balances[to][tokenAddress] += amount;
     }
 
     function burn(address tokenAddress, uint amount) public onlyOwner {
