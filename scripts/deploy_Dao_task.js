@@ -212,6 +212,15 @@ async function main() {
   filter = batchTaskVoting.filters.EndVote(1, null, null, null);
   const results = await batchTaskVoting.queryFilter(filter);
 
+  filter1 = batchTaskVoting.filters.InitBatchTaskAuction(
+    null,
+    null,
+    null,
+    null
+  );
+  results1 = await batchTaskVoting.queryFilter(filter1);
+  console.log("results-----------: ", results[0].args);
+
   results.map((event) => {
     event = event.args;
     let batchTaskVoted = {

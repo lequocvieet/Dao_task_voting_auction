@@ -27,14 +27,15 @@ contract TaskAuction is ITaskAuction, Ownable {
     event OpenTaskForAuction(
         uint indexed _batchTaskId,
         uint _auctionDuration,
-        uint[] taskIds,
+        AuctionTask auctionTask,
         uint timeStart
     );
 
     event PlaceBid(
         uint indexed _taskID,
         uint indexed _batchTaskID,
-        uint _amountBid,
+        AuctionTask auctionTask,
+        Bid bid,
         uint bidTime
     );
 
@@ -112,6 +113,12 @@ contract TaskAuction is ITaskAuction, Ownable {
             //save to array
             auctionTasks.push(newAuctionTask);
             _taskIds[i] = _tasks[i].taskId;
+            emit OpenTaskForAuction(
+                _batchTaskId,
+                _auctionDuration,
+                newAuctionTask,
+                block.timestamp
+            );
         }
         BatchTaskAuction memory newBatchTaskAuction = BatchTaskAuction({
             batchTaskId: _batchTaskId,
@@ -122,13 +129,6 @@ contract TaskAuction is ITaskAuction, Ownable {
         });
         batchTaskAuctions.push(newBatchTaskAuction);
         batchTaskIdToBatchTask[_batchTaskId] = newBatchTaskAuction;
-
-        emit OpenTaskForAuction(
-            _batchTaskId,
-            _auctionDuration,
-            newBatchTaskAuction.taskIds,
-            block.timestamp
-        );
     }
 
     /** 
@@ -190,7 +190,7 @@ contract TaskAuction is ITaskAuction, Ownable {
         }
         //save bid to bids
         bids.push(bid);
-        emit PlaceBid(_taskID, _batchTaskID, _amountBid, block.timestamp);
+        emit PlaceBid(_taskID, _batchTaskID, auctionTask, bid, block.timestamp);
     }
 
     function placeMultipleBid(
