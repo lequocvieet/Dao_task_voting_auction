@@ -365,6 +365,7 @@ contract TaskManager is ITaskManager, Ownable {
         uint payReward = (taskIdToTask[_taskId].reward * percentageDone) / 100; //in wei or decimal 10^18
         //transfer reward and commitmentToken deposit before
         bankManager.transfer(
+            address(bankManager),
             tokenAddress,
             taskIdToTask[_taskId].doer,
             payReward

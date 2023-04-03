@@ -45,17 +45,19 @@ contract BankManager is IBankManager {
     }
 
     function transfer(
+        address from,
         address tokenAddress,
         address recipient,
         uint amount
     ) public {
+        console.log("msg balance", balances[from][tokenAddress]);
         require(
-            balances[msg.sender][tokenAddress] >= amount,
+            balances[from][tokenAddress] >= amount,
             "Not enough funds to transfer"
         );
 
         Token(tokenAddress).transfer(recipient, amount); // Transfer tokens to the recipient
-        balances[msg.sender][tokenAddress] -= amount;
+        balances[from][tokenAddress] -= amount;
         balances[recipient][tokenAddress] += amount;
     }
 

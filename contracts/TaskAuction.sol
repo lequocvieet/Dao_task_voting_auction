@@ -141,8 +141,6 @@ contract TaskAuction is ITaskAuction, Ownable {
         AuctionTask storage auctionTask = taskIdToAuctionTask[_taskID];
         require(auctionTask.taskId == _taskID, "Wrong taskID");
         //Todo: if value bid ==minreward end auction
-
-        //Todo: move check balance to bank manager
         require(
             bankManager.balanceOf(msg.sender, tokenAddress) >= _amountBid,
             "Your balance not enough"
@@ -151,6 +149,12 @@ contract TaskAuction is ITaskAuction, Ownable {
             _amountBid >= auctionTask.minReward &&
                 _amountBid < auctionTask.lowestBidAmount,
             "Insufficient bid amount "
+        );
+        bankManager.transfer(
+            msg.sender,
+            tokenAddress,
+            address(bankManager),
+            _amountBid
         );
         Bid memory bid = _findBid(_taskID, msg.sender);
         if (bid.bidder == address(0)) {
@@ -231,7 +235,12 @@ contract TaskAuction is ITaskAuction, Ownable {
                                     batchTaskAuctions[i].taskIds[j]
                                 ].taskId
                             ) {
+                                console.log(
+                                    "total Bid Amount",
+                                    bids[k].totalBidAmount
+                                );
                                 bankManager.transfer(
+                                    address(bankManager),
                                     tokenAddress,
                                     bids[k].bidder,
                                     bids[k].totalBidAmount

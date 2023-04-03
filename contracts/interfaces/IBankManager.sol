@@ -8,6 +8,7 @@ interface IBankManager {
     function burn(address tokenAddress, uint amount) external;
 
     function transfer(
+        address from,
         address tokenAddress,
         address recipient,
         uint amount

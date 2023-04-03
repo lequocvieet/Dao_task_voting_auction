@@ -212,12 +212,12 @@ async function main() {
   await taskAuction.connect(account4).placeBid(1, 1, 90);
   await taskAuction.connect(account5).placeBid(1, 1, 80);
 
-  // //Call end Auction at TaskAuction too soon to success
-  // //await taskAuction.endAuction();
+  //Call end Auction at TaskAuction too soon to success
+  await taskAuction.endAuction();
 
-  // //increase time
-  // await time.increase(2000);
-  // await taskAuction.endAuction();
+  //increase time
+  await time.increase(2000);
+  await taskAuction.endAuction();
 
   // //After endAuction account4 must get back money
   // //and account 5 assigned Task1 and have permission to call receive task later
