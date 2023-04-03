@@ -166,14 +166,14 @@ async function main() {
   //open poll for vote at task manager 1000s
   await taskManager.openPollForVote(1, 1000);
 
-  //account4 vote on batchTask 1
-  await batchTaskVoting.connect(account4).voteOnBatchTask(1, 1);
-
-  //vote again change to batchTask2
+  //account4 vote on batchTask2
   await batchTaskVoting.connect(account4).voteOnBatchTask(2, 1);
 
-  //account5 vote on batchTask 2
-  await batchTaskVoting.connect(account5).voteOnBatchTask(2, 1);
+  //vote again change to batchTask1
+  await batchTaskVoting.connect(account4).voteOnBatchTask(1, 1);
+
+  //account5 vote on batchTask1
+  await batchTaskVoting.connect(account5).voteOnBatchTask(1, 1);
 
   //call endvote at batchTaskVoting too soon
   await batchTaskVoting.endVote();
@@ -184,15 +184,16 @@ async function main() {
 
   //Filter EndVote event
   //get event
-  filter = batchTaskVoting.filters.EndVote(null, null, null, null);
+  filter = batchTaskVoting.filters.EndVote(1, null, null, null);
 
   const results = await batchTaskVoting.queryFilter(filter);
+  console.log("results", results);
   console.log("EndVote event:", results[0].args.batchTaskCanEnd);
 
   // //------------------------------------------Test Logic AUCTION--------------------------------------
 
-  //open for Auction batchTask2 with 1000s duration
-  await taskManager.openBatchTaskForAuction(2, 1000);
+  //open for Auction batchTask1 with 1000s duration
+  await taskManager.openBatchTaskForAuction(1, 1000);
 
   // //user place bid on each task in TaskAuction
   // //account 4 place bid 90wei on task1 of batchTask1 with current reward=100wei

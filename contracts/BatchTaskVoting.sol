@@ -42,7 +42,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     event Notify(string notify);
 
     event EndVote(
-        uint pollId,
+        uint indexed pollId,
         POLL_STATE pollState,
         BatchTaskVoting batchTaskCanEnd,
         uint endTime
@@ -188,7 +188,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                 int256 max = batchTaskIdToBatchTaskVoting[
                     pollVotings[i].batchTaskIds[0]
                 ].result;
-                for (uint j = 1; j < pollVotings[i].batchTaskIds.length; j++) {
+                for (uint j = 0; j < pollVotings[i].batchTaskIds.length; j++) {
                     if (
                         batchTaskIdToBatchTaskVoting[
                             pollVotings[i].batchTaskIds[j]
