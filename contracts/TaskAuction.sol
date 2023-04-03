@@ -25,15 +25,15 @@ contract TaskAuction is ITaskAuction, Ownable {
     mapping(uint => BatchTaskAuction) batchTaskIdToBatchTask;
 
     event OpenTaskForAuction(
-        uint _batchTaskId,
+        uint indexed _batchTaskId,
         uint _auctionDuration,
         uint[] taskIds,
         uint timeStart
     );
 
     event PlaceBid(
-        uint _taskID,
-        uint _batchTaskID,
+        uint indexed _taskID,
+        uint indexed _batchTaskID,
         uint _amountBid,
         uint bidTime
     );

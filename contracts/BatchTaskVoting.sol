@@ -48,6 +48,13 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
         uint endTime
     );
 
+    event InitBatchTaskAuction(
+        uint indexed pollId,
+        POLL_STATE pollState,
+        BatchTaskVoting batchTaskAuction,
+        uint time
+    );
+
     modifier checkPollState(POLL_STATE requiredState, uint _pollID) {
         require(
             pollIdToPoll[_pollID].pollState == requiredState,
@@ -219,6 +226,14 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                         //Call to taskManager
                         taskManager.initBatchTaskAuction(
                             pollVotings[i].batchTaskIds[k]
+                        );
+                        emit InitBatchTaskAuction(
+                            pollVotings[i].pollId,
+                            POLL_STATE.VOTED,
+                            batchTaskIdToBatchTaskVoting[
+                                pollVotings[i].batchTaskIds[k]
+                            ],
+                            block.timestamp
                         );
                         break;
                     }

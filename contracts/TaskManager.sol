@@ -59,7 +59,7 @@ contract TaskManager is ITaskManager, Ownable {
         TASK_STATE taskState
     );
     event OpenPollForVote(
-        uint _pollId,
+        uint indexed _pollId,
         uint _voteDuration,
         uint timeOpenPollVote,
         address indexed pollOwner,
@@ -67,7 +67,7 @@ contract TaskManager is ITaskManager, Ownable {
     );
 
     event OpenBatchTaskForAuction(
-        uint batchTaskID,
+        uint indexed batchTaskID,
         uint auctionDuration,
         uint timeOpen, //Todo: indexed caller
         BATCH_TASK_STATE batchTaskState

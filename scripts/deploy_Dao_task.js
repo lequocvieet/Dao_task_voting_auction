@@ -181,6 +181,17 @@ async function main() {
   //open poll for vote at task manager 1000s
   await taskManager.connect(account1).openPollForVote(1, 1000);
 
+  //Filter OpenVote event
+  filterOpenVote = taskManager.filters.OpenPollForVote(
+    1,
+    null,
+    null,
+    null,
+    null
+  );
+  const resultsfilterOpenVote = await taskManager.queryFilter(filterOpenVote);
+  console.log("resultsfilterOpenVote", resultsfilterOpenVote[0].args);
+
   //account4 vote on batchTask2
   await batchTaskVoting.connect(account4).voteOnBatchTask(2, 1);
 
