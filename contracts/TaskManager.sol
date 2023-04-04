@@ -251,6 +251,7 @@ contract TaskManager is ITaskManager, Ownable {
 
     //Todo: only call by batchTask Owner
     function openBatchTaskForAuction(
+        uint _pollID,
         uint _batchTaskID,
         uint _auctionDuration
     ) external checkBatchTaskState(BATCH_TASK_STATE.VOTED, _batchTaskID) {
@@ -269,6 +270,7 @@ contract TaskManager is ITaskManager, Ownable {
             ];
         }
         taskAuction.openTaskForAuction(
+            _pollID,
             auctionTasks,
             _batchTaskID,
             _auctionDuration

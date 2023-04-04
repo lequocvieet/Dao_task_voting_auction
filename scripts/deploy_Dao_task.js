@@ -212,15 +212,6 @@ async function main() {
   filter = batchTaskVoting.filters.EndVote(1, null, null, null);
   const results = await batchTaskVoting.queryFilter(filter);
 
-  filter1 = batchTaskVoting.filters.InitBatchTaskAuction(
-    null,
-    null,
-    null,
-    null
-  );
-  results1 = await batchTaskVoting.queryFilter(filter1);
-  console.log("results-----------: ", results[0].args);
-
   results.map((event) => {
     event = event.args;
     let batchTaskVoted = {
@@ -232,10 +223,23 @@ async function main() {
     console.log("batchTaskVoted", batchTaskVoted);
   });
 
+  filter1 = batchTaskVoting.filters.InitBatchTaskAuction(
+    null,
+    null,
+    null,
+    null
+  );
+  results1 = await batchTaskVoting.queryFilter(filter1);
+  console.log("results1: ", results[0].args);
+
   // //------------------------------------------Test Logic AUCTION--------------------------------------
 
   //open for Auction batchTask1 with 1000s duration
   await taskManager.openBatchTaskForAuction(1, 1000);
+
+  filter2 = taskAuction.filters.OpenTaskForAuction(1, null, null, null);
+  results2 = await taskAuction.queryFilter(filter2);
+  console.log("results2 ", results2[0].args);
 
   //account 4 place bid 90wei on task1 of batchTask1 with current reward=100wei
   //account 5 place bid 80 wei on same task to kick account4 out

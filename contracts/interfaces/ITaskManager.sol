@@ -65,6 +65,7 @@ interface ITaskManager {
     function initBatchTaskAuction(uint _batchTaskId) external;
 
     function openBatchTaskForAuction(
+        uint _pollID,
         uint _batchTaskID,
         uint _auctionDuration
     ) external;

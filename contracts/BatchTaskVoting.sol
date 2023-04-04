@@ -244,4 +244,26 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
             emit Notify("There are no Poll Voting can end at the moment");
         }
     }
+
+    function getAllPollVoting() public view returns (PollVoting[] memory) {
+        PollVoting[] memory polls = new PollVoting[](pollVotings.length);
+        for (uint i = 0; i < pollVotings.length; i++) {
+            polls[i] = pollIdToPoll[i + 1];
+        }
+        return polls;
+    }
+
+    function getAllBatchTaskVoting(
+        uint _pollID
+    ) public view returns (BatchTaskVoting[] memory) {
+        BatchTaskVoting[] memory listBatchTasks = new BatchTaskVoting[](
+            pollIdToPoll[_pollID].batchTaskIds.length
+        );
+        for (uint i = 0; i < pollIdToPoll[_pollID].batchTaskIds.length; i++) {
+            listBatchTasks[i] = batchTaskIdToBatchTaskVoting[
+                pollIdToPoll[_pollID].batchTaskIds[i]
+            ];
+        }
+        return listBatchTasks;
+    }
 }

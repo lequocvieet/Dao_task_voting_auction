@@ -88,6 +88,7 @@ contract TaskAuction is ITaskAuction, Ownable {
 
     //only call by taskManager
     function openTaskForAuction(
+        uint _pollId,
         ITaskManager.Task[] memory _tasks,
         uint _batchTaskId,
         uint _auctionDuration
@@ -121,6 +122,7 @@ contract TaskAuction is ITaskAuction, Ownable {
             );
         }
         BatchTaskAuction memory newBatchTaskAuction = BatchTaskAuction({
+            pollId: _pollId,
             batchTaskId: _batchTaskId,
             taskIds: _taskIds,
             duration: _auctionDuration,
@@ -290,5 +292,37 @@ contract TaskAuction is ITaskAuction, Ownable {
                     });
             }
         }
+    }
+
+    function getAllBatchTaskAuction(
+        uint _pollID
+    ) public view returns (BatchTaskAuction[] memory) {
+        BatchTaskAuction[] memory listBatchTasks = new BatchTaskAuction[](
+            batchTaskAuctions.length
+        );
+        for (uint i = 0; i < batchTaskAuctions.length; i++) {
+            if (batchTaskAuctions[i].pollId == _pollID) {
+                listBatchTasks[i] = batchTaskAuctions[i];
+            }
+        }
+        return listBatchTasks;
+    }
+
+    function getAllTaskAuction(
+        uint _batchTaskId
+    ) public view returns (AuctionTask[] memory) {
+        AuctionTask[] memory listTasks = new AuctionTask[](
+            batchTaskIdToBatchTask[_batchTaskId].taskIds.length
+        );
+        for (
+            uint i = 0;
+            i < batchTaskIdToBatchTask[_batchTaskId].taskIds.length;
+            i++
+        ) {
+            listTasks[i] = taskIdToAuctionTask[
+                batchTaskIdToBatchTask[_batchTaskId].taskIds[i]
+            ];
+        }
+        return listTasks;
     }
 }

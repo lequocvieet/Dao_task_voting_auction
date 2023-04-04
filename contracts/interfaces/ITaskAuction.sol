@@ -18,6 +18,7 @@ interface ITaskAuction {
     }
 
     struct BatchTaskAuction {
+        uint pollId;
         uint batchTaskId;
         uint[] taskIds;
         uint duration;
@@ -53,6 +54,7 @@ interface ITaskAuction {
     function setBankManager(address _bankManagerAddress) external;
 
     function openTaskForAuction(
+        uint _pollId,
         ITaskManager.Task[] memory _tasks,
         uint _batchTaskId,
         uint _auctionDuration
