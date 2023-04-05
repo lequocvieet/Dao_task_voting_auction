@@ -28,6 +28,7 @@ contract TaskAuction is ITaskAuction, Ownable {
         uint indexed _batchTaskId,
         uint _auctionDuration,
         AuctionTask auctionTask,
+        BATCH_TASK_STATE batchTaskState,
         uint timeStart
     );
 
@@ -48,9 +49,9 @@ contract TaskAuction is ITaskAuction, Ownable {
     );
 
     event EndAuction(
-        BATCH_TASK_STATE batchTaskState,
         uint indexed batchTaskId,
-        AuctionTask auctionTask,
+        BATCH_TASK_STATE batchTaskState,
+        AuctionTask assignedTask,
         uint endTime
     );
 
@@ -118,6 +119,7 @@ contract TaskAuction is ITaskAuction, Ownable {
                 _batchTaskId,
                 _auctionDuration,
                 newAuctionTask,
+                BATCH_TASK_STATE.OPENFORAUCTION,
                 block.timestamp
             );
         }
@@ -138,6 +140,7 @@ contract TaskAuction is ITaskAuction, Ownable {
     //Once Bid require amount money>= minReward and < lowestBidAmount
     //Require taskState=OPENFORAUCTION
     //Require time placeBid < time startAuction+duration
+    //Todo: case use bid against their previous bid
     */
     function placeBid(
         uint _taskID,
@@ -258,8 +261,8 @@ contract TaskAuction is ITaskAuction, Ownable {
                             taskIdToAuctionTask[batchTaskAuctions[i].taskIds[j]]
                         );
                         emit EndAuction(
-                            BATCH_TASK_STATE.ENDAUCTION,
                             batchTaskAuctions[i].batchTaskId,
+                            BATCH_TASK_STATE.ENDAUCTION,
                             taskIdToAuctionTask[
                                 batchTaskAuctions[i].taskIds[j]
                             ],

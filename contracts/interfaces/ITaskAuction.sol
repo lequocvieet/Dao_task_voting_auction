@@ -27,13 +27,16 @@ interface ITaskAuction {
     }
 
     enum BATCH_TASK_STATE {
+        CREATED,
+        VOTED,
         OPENFORAUCTION,
         ENDAUCTION
     }
 
     enum TASK_STATE {
-        OPENFORAUCTION,
+        CREATED,
         ASSIGNED,
+        OPENFORAUCTION,
         RECEIVED,
         SUBMITTED,
         REVIEWED

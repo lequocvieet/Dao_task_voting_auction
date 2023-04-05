@@ -36,12 +36,14 @@ interface ITaskManager {
     enum BATCH_TASK_STATE {
         CREATED,
         VOTED,
-        OPENFORAUCTION
+        OPENFORAUCTION,
+        ENDAUCTION
     }
 
     enum TASK_STATE {
         CREATED,
         ASSIGNED,
+        OPENFORAUCTION,
         RECEIVED,
         SUBMITTED,
         REVIEWED

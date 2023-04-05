@@ -213,10 +213,13 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                 //Choose batchTask with higher results
                 for (uint k = 0; k < pollVotings[i].batchTaskIds.length; k++) {
                     if (
-                        max ==
-                        batchTaskIdToBatchTaskVoting[
+                        (max ==
+                            batchTaskIdToBatchTaskVoting[
+                                pollVotings[i].batchTaskIds[k]
+                            ].result) &&
+                        (batchTaskIdToBatchTaskVoting[
                             pollVotings[i].batchTaskIds[k]
-                        ].result
+                        ].voters.length != 0)
                     ) {
                         //Call to taskManager
                         taskManager.initBatchTaskAuction(

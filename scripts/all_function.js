@@ -77,7 +77,7 @@ async function main() {
     null,
     null
   );
-  const resultsfilterOpenVote = await taskManager.queryFilter(filterOpenVote);
+  resultsfilterOpenVote = await taskManager.queryFilter(filterOpenVote);
   resultsfilterOpenVote.map((event) => {
     event = event.args;
     let pollOpened = {
@@ -110,7 +110,7 @@ async function main() {
   //Filter all EndVote event
   let PollEndeds = [];
   filter = batchTaskVoting.filters.EndVote(null, null, null, null);
-  const results = await batchTaskVoting.queryFilter(filter);
+  results = await batchTaskVoting.queryFilter(filter);
   results.map((event) => {
     event = event.args;
     let pollEnded = {
@@ -123,28 +123,51 @@ async function main() {
   });
   console.log("PollEndeds", PollEndeds);
 
-  filter1 = batchTaskVoting.filters.InitBatchTaskAuction(
-    null,
-    null,
-    null,
-    null
-  );
-  results1 = await batchTaskVoting.queryFilter(filter1);
-  console.log("results1: ", results[0].args);
-
   // //------------------------------------------AUCTION FUNCTION--------------------------------------
 
-  //open for Auction batchTask1 with 1000s duration
+  //open for Auction poll 1 batchTask 1  with 1000s duration
   await taskManager.openBatchTaskForAuction(1, 1, 1000);
 
-  filter2 = taskAuction.filters.OpenTaskForAuction(1, null, null, null);
-  results2 = await taskAuction.queryFilter(filter2);
-  console.log("results2 ", results2[0].args);
+  //Filter OpenTaskForAuction event of batch1
+  let batchTaskOnAuctions = [];
+  filter = taskAuction.filters.OpenTaskForAuction(1, null, null, null);
+  results = await taskAuction.queryFilter(filter);
+  results.map((event) => {
+    event = event.args;
+    let batchTaskOnAuction = {
+      batchTaskId: event._batchTaskId.toString(),
+      auctionDuration: event._auctionDuration,
+      taskOnAuction: event.auctionTask,
+      BATCH_TASK_STATE: event.batchTaskState,
+      endTime: EpochTimeToDate(event.timeStart),
+    };
+    batchTaskOnAuctions.push(batchTaskOnAuction);
+  });
+  console.log("batchTaskOnAuctions", batchTaskOnAuctions);
 
   //bidder place bid 15 token on task1 of batchTask1(current reward is 20)
   //pic place bid 10 token on same task to kick bidder out
   await taskAuction.connect(bidder).placeBid(1, 1, 15);
   await taskAuction.connect(pic).placeBid(1, 1, 10);
+  //pic bid again with 5 token
+  await taskAuction.connect(pic).placeBid(1, 1, 5);
+
+  //filter PlaceBid event of task1
+  let bids = [];
+  filter = taskAuction.filters.PlaceBid(1, null, null, null, null);
+  results = await taskAuction.queryFilter(filter);
+  results.map((event) => {
+    event = event.args;
+    let bid = {
+      taskID: event._taskID.toString(),
+      batchTaskID: event._batchTaskID.toString(),
+      auctionTask: event.auctionTask,
+      bid: event.bid,
+      bidTime: EpochTimeToDate(event.bidTime),
+    };
+    bids.push(bid);
+  });
+  console.log("bids", bids);
 
   //Call end Auction at TaskAuction too soon to success
   await taskAuction.endAuction();
@@ -153,20 +176,22 @@ async function main() {
   await time.increase(2000);
   await taskAuction.endAuction();
 
-  //Filter EndAuction event
-  filterEndAuction = taskAuction.filters.EndAuction(null, 1, null, null);
-
-  const resultsFilter = await taskAuction.queryFilter(filterEndAuction);
-  resultsFilter.map((event) => {
+  //Filter EndAuction event of batchTask1
+  let endAuctionTasks = [];
+  filter = taskAuction.filters.EndAuction(1, null, null, null);
+  results = await taskAuction.queryFilter(filter);
+  results.map((event) => {
     event = event.args;
-    let EndAuctionTask = {
-      batchTaskState: event.batchTaskState,
+    let endAuctionTask = {
       batchTaskId: event.batchTaskId,
-      auctionTask: event.auctionTask,
-      endTime: event.endTime,
+      batchTaskState: event.batchTaskState,
+      assignedTask: event.assignedTask,
+      endTime: EpochTimeToDate(event.endTime),
     };
-    console.log("EndAuctionTask", EndAuctionTask);
+    endAuctionTasks.push(endAuctionTask);
   });
+  console.log("endAuctionTasks", endAuctionTasks);
+
   //After endAuction bidder must get back money
   //pic calculate amount token need to commit
   await creditScore.calculateCommitmentToken(pic.address);

@@ -10,6 +10,7 @@ interface IBatchTaskVoting {
         address[] voters; //list voter
     }
     enum POLL_STATE {
+        CREATED,
         OPENFORVOTE,
         VOTED
     }
