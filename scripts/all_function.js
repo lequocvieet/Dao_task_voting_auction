@@ -7,6 +7,7 @@ const taskAuctionAddress = require("../contractsData/TaskAuction-address.json");
 const creditScoreAddress = require("../contractsData/CreditScore-address.json");
 const bankManagerAddress = require("../contractsData/BankManager-address.json");
 const tokenAddress = require("../contractsData/Token-address.json");
+const { EpochTimeToDate } = require("../scripts/helper_function");
 
 async function main() {
   //Get already deployed contract
@@ -64,23 +65,36 @@ async function main() {
   //------------------------------------------VOTING FUNCTION --------------------------------------
 
   //openPollForVote(pollId, voteDuration)
-  await taskManager.connect(pollOwner).openPollForVote(1, 1000);
+  await taskManager.connect(pollOwner).openPollForVote(1, 1000); //poll1
+  await taskManager.connect(pollOwner).openPollForVote(2, 1000); //poll2
 
-  //Filter OpenVote event
+  //Filter OpenPollForVote event
+  let allPollOpened = [];
   filterOpenVote = taskManager.filters.OpenPollForVote(
-    1,
+    null,
     null,
     null,
     null,
     null
   );
   const resultsfilterOpenVote = await taskManager.queryFilter(filterOpenVote);
-  console.log("resultsfilterOpenVote", resultsfilterOpenVote[0].args);
+  resultsfilterOpenVote.map((event) => {
+    event = event.args;
+    let pollOpened = {
+      pollId: event._pollId.toString(),
+      voteDuration: event._voteDuration,
+      timeOpen: EpochTimeToDate(event.timeOpenPollVote),
+      pollOwner: event.pollOwner,
+      POLL_STATE: event.pollState,
+    };
+    allPollOpened.push(pollOpened);
+  });
+  console.log("all Poll Opened", allPollOpened);
 
   //bidder vote on batchTask2
   await batchTaskVoting.connect(bidder).voteOnBatchTask(2, 1);
 
-  //vote again change to batchTask1
+  //bidder vote again change to batchTask1
   await batchTaskVoting.connect(bidder).voteOnBatchTask(1, 1);
 
   //pic vote on batchTask1
@@ -93,20 +107,21 @@ async function main() {
   await time.increase(2000);
   await batchTaskVoting.endVote();
 
-  //Filter EndVote event
-  filter = batchTaskVoting.filters.EndVote(1, null, null, null);
+  //Filter all EndVote event
+  let PollEndeds = [];
+  filter = batchTaskVoting.filters.EndVote(null, null, null, null);
   const results = await batchTaskVoting.queryFilter(filter);
-
   results.map((event) => {
     event = event.args;
-    let batchTaskVoted = {
+    let pollEnded = {
       pollId: event.pollId.toString(),
-      pollState: event.pollState,
-      batchTaskCanEnd: event.batchTaskCanEnd,
-      endTime: event.endTime,
+      POLL_STATE: event.pollState,
+      batchTaskWinVote: event.batchWinVote,
+      endTime: EpochTimeToDate(event.endTime),
     };
-    console.log("batchTaskVoted", batchTaskVoted);
+    PollEndeds.push(pollEnded);
   });
+  console.log("PollEndeds", PollEndeds);
 
   filter1 = batchTaskVoting.filters.InitBatchTaskAuction(
     null,
@@ -126,7 +141,7 @@ async function main() {
   results2 = await taskAuction.queryFilter(filter2);
   console.log("results2 ", results2[0].args);
 
-  //bidder  place bid 15 token on task1 of batchTask1(current reward is 20)
+  //bidder place bid 15 token on task1 of batchTask1(current reward is 20)
   //pic place bid 10 token on same task to kick bidder out
   await taskAuction.connect(bidder).placeBid(1, 1, 15);
   await taskAuction.connect(pic).placeBid(1, 1, 10);
@@ -162,7 +177,7 @@ async function main() {
   const resultsEvent = await creditScore.queryFilter(filterCommitToken);
 
   console.log("commitment Token pic", resultsEvent[0].args.value);
-  //Account 5 assigned Task1 and have permission to call receive task later
+  //pic get assigned Task1 and have permission to call receive task later
   await taskManager.connect(pic).receiveTask(1, resultsEvent[0].args.value);
 
   //User submit TaskResult

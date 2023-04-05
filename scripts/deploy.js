@@ -135,6 +135,7 @@ async function main() {
   await taskManager.connect(contract_owner).initPoll(pollOwner.address);
   await taskManager.connect(contract_owner).initBatchTask(1); //batch1 poll1
   await taskManager.connect(contract_owner).initBatchTask(1); //batch2 poll2
+  await taskManager.connect(contract_owner).initBatchTask(2); //batch3 poll2
   await taskManager
     .connect(contract_owner)
     .initTask(

@@ -46,7 +46,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     event EndVote(
         uint indexed pollId,
         POLL_STATE pollState,
-        BatchTaskVoting batchTaskCanEnd,
+        BatchTaskVoting batchWinVote,
         uint endTime
     );
 
@@ -195,6 +195,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
             ) {
                 found = true;
                 pollVotings[i].pollState = POLL_STATE.VOTED;
+                //Todo: Error happen if create poll with no batch inside
                 int256 max = batchTaskIdToBatchTaskVoting[
                     pollVotings[i].batchTaskIds[0]
                 ].result;
@@ -208,14 +209,6 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                             pollVotings[i].batchTaskIds[j]
                         ].result;
                     }
-                    emit EndVote(
-                        pollVotings[i].pollId,
-                        POLL_STATE.VOTED,
-                        batchTaskIdToBatchTaskVoting[
-                            pollVotings[i].batchTaskIds[j]
-                        ],
-                        block.timestamp
-                    );
                 }
                 //Choose batchTask with higher results
                 for (uint k = 0; k < pollVotings[i].batchTaskIds.length; k++) {
@@ -229,7 +222,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
                         taskManager.initBatchTaskAuction(
                             pollVotings[i].batchTaskIds[k]
                         );
-                        emit InitBatchTaskAuction(
+                        emit EndVote(
                             pollVotings[i].pollId,
                             POLL_STATE.VOTED,
                             batchTaskIdToBatchTaskVoting[
