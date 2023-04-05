@@ -9,17 +9,19 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     ITaskManager public taskManager;
 
     //mapping batchTaskIdToBatchTaskVoting
-    mapping(uint => BatchTaskVoting) batchTaskIdToBatchTaskVoting;
+    mapping(uint => BatchTaskVoting) public batchTaskIdToBatchTaskVoting;
 
-    mapping(uint => PollVoting) pollIdToPoll;
+    mapping(uint => PollVoting) public pollIdToPoll;
 
     PollVoting[] public pollVotings;
 
-    mapping(uint => mapping(address => bool)) pollIdToVoterToVoted;
+    mapping(uint => mapping(address => bool)) public pollIdToVoterToVoted;
 
-    mapping(uint => mapping(address => uint)) pollIdToVoterToPreviousVote;
+    mapping(uint => mapping(address => uint))
+        public pollIdToVoterToPreviousVote;
 
-    mapping(uint => mapping(uint => int256)) batchTaskIdToPollIdToPreviousResult;
+    mapping(uint => mapping(uint => int256))
+        public batchTaskIdToPollIdToPreviousResult;
 
     //Array to store all BatchTaskVoting on vote and voted
     BatchTaskVoting[] public batchTasks;

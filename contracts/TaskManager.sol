@@ -33,24 +33,25 @@ contract TaskManager is ITaskManager, Ownable {
     //Array to store all batch task created
     BatchTask[] public batchTasks;
 
-    mapping(uint => Task) taskIdToTask;
+    mapping(uint => Task) public taskIdToTask;
 
-    mapping(uint => Poll) pollIdToPoll;
+    mapping(uint => Poll) public pollIdToPoll;
 
-    mapping(uint => BatchTask) batchTaskIdToBatchTask;
+    mapping(uint => BatchTask) public batchTaskIdToBatchTask;
 
     event PollInit(
-        uint pollId,
+        uint indexed pollId,
         address indexed pollOwner,
         POLL_STATE pollState
     );
     event BatchTaskInit(
-        uint batchTaskId,
-        uint pollId,
+        uint indexed batchTaskId,
+        uint indexed pollId,
         BATCH_TASK_STATE batchTaskState
     );
     event TaskInit(
-        uint batchTaskId,
+        uint taskId,
+        uint indexed batchTaskId,
         uint point,
         uint reward,
         uint minReward,
@@ -74,14 +75,14 @@ contract TaskManager is ITaskManager, Ownable {
     );
 
     event AssignTask(
-        uint taskId,
+        uint indexed taskId,
         uint reward,
         address indexed doer,
         TASK_STATE taskState
     );
 
     event ReceiveTask(
-        uint taskId,
+        uint indexed taskId,
         uint timeReceive,
         address indexed doer,
         TASK_STATE taskState,
@@ -89,14 +90,14 @@ contract TaskManager is ITaskManager, Ownable {
     );
 
     event SubmitTaskResult(
-        uint taskId,
+        uint indexed taskId,
         uint timeSubmit,
         address indexed doer,
         TASK_STATE taskState
     );
 
     event SubmitReview(
-        uint taskId,
+        uint indexed taskId,
         uint percentageDone,
         address indexed reviewer,
         TASK_STATE taskState,
@@ -105,7 +106,7 @@ contract TaskManager is ITaskManager, Ownable {
     );
 
     event UpdateTask(
-        uint taskId,
+        uint indexed taskId,
         uint newPoint,
         address indexed updater,
         uint timeUpdate
@@ -205,6 +206,7 @@ contract TaskManager is ITaskManager, Ownable {
         batchTaskIdToBatchTask[_batchTaskId].taskIds.push(taskCount);
         taskIdToTask[taskCount] = newTask;
         emit TaskInit(
+            taskCount,
             _batchTaskId,
             _point,
             _reward,
@@ -235,7 +237,7 @@ contract TaskManager is ITaskManager, Ownable {
             _voteDuration,
             block.timestamp,
             msg.sender,
-            POLL_STATE.OPENFORVOTE
+            pollIdToPoll[_pollId].pollState
         );
     }
 
