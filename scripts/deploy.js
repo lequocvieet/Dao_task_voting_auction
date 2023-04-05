@@ -92,49 +92,14 @@ async function main() {
 
   await batchTaskVoting.setTaskManager(taskManager.address);
 
-  //BankManager mint token
-  await bankManager.mint(
-    token.address,
-    bankManager.address,
-    ethers.utils.parseEther(totalSupply.toString())
-  );
-
   //Mint Token
-  await bankManager.mint(
-    token.address,
-    bankManager.address,
-    ethers.utils.parseEther(totalSupply.toString())
-  );
-  await bankManager.mint(
-    token.address,
-    contract_owner.address,
-    ethers.utils.parseEther(fundPrice.toString())
-  );
-  await bankManager.mint(
-    token.address,
-    pollOwner.address,
-    ethers.utils.parseEther(fundPrice.toString())
-  );
-  await bankManager.mint(
-    token.address,
-    reporter.address,
-    ethers.utils.parseEther(fundPrice.toString())
-  );
-  await bankManager.mint(
-    token.address,
-    reviewer.address,
-    ethers.utils.parseEther(fundPrice.toString())
-  );
-  await bankManager.mint(
-    token.address,
-    bidder.address,
-    ethers.utils.parseEther(fundPrice.toString())
-  );
-  await bankManager.mint(
-    token.address,
-    pic.address,
-    ethers.utils.parseEther(fundPrice.toString())
-  );
+  await bankManager.mint(token.address, bankManager.address, totalSupply);
+  await bankManager.mint(token.address, contract_owner.address, fundPrice);
+  await bankManager.mint(token.address, pollOwner.address, fundPrice);
+  await bankManager.mint(token.address, reporter.address, fundPrice);
+  await bankManager.mint(token.address, reviewer.address, fundPrice);
+  await bankManager.mint(token.address, bidder.address, fundPrice);
+  await bankManager.mint(token.address, pic.address, fundPrice);
 
   console.log(
     "Balance of Bank",

@@ -117,20 +117,19 @@ async function main() {
   results1 = await batchTaskVoting.queryFilter(filter1);
   console.log("results1: ", results[0].args);
 
-  // //------------------------------------------Test Logic AUCTION--------------------------------------
+  // //------------------------------------------AUCTION FUNCTION--------------------------------------
 
   //open for Auction batchTask1 with 1000s duration
-  await taskManager.openBatchTaskForAuction(1, 1000);
+  await taskManager.openBatchTaskForAuction(1, 1, 1000);
 
   filter2 = taskAuction.filters.OpenTaskForAuction(1, null, null, null);
   results2 = await taskAuction.queryFilter(filter2);
   console.log("results2 ", results2[0].args);
 
-  //account 4 place bid 90wei on task1 of batchTask1 with current reward=100wei
-  //account 5 place bid 80 wei on same task to kick bidder out
-  await taskAuction.connect(bidder).placeBid(1, 1, 90);
-  await taskAuction.connect(pic).placeBid(1, 1, 80);
-  await taskAuction.connect(bidder).placeBid(2, 1, 80);
+  //bidder  place bid 15 token on task1 of batchTask1(current reward is 20)
+  //pic place bid 10 token on same task to kick bidder out
+  await taskAuction.connect(bidder).placeBid(1, 1, 15);
+  await taskAuction.connect(pic).placeBid(1, 1, 10);
 
   //Call end Auction at TaskAuction too soon to success
   await taskAuction.endAuction();
