@@ -58,6 +58,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     );
 
     modifier checkPollState(POLL_STATE requiredState, uint _pollID) {
+        require(pollIdToPoll[_pollID].pollId != 0, "Poll not exist");
         require(
             pollIdToPoll[_pollID].pollState == requiredState,
             "Error: Invalid Poll state!"
@@ -114,6 +115,10 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
         uint _batchTaskID,
         uint _pollId
     ) public checkPollState(POLL_STATE.OPENFORVOTE, _pollId) {
+        require(
+            batchTaskIdToBatchTaskVoting[_batchTaskID].batchTaskId != 0,
+            "batch task id not exist"
+        );
         require(
             block.timestamp >= pollIdToPoll[_pollId].startTime &&
                 block.timestamp <=

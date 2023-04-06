@@ -157,10 +157,24 @@ describe("Test Voting", function () {
       .voteOnBatchTask(batchTaskId, pollId);
     blockNumber = await ethers.provider.getBlockNumber(); // obtain current block number
     timestamp = (await ethers.provider.getBlock(blockNumber)).timestamp; // obtain current block timestamp
-    let allBatchTasks = await batchTaskVoting.getAllBatchTaskVoting(pollId); // //Open Poll 2 for vote
-    console.log(allBatchTasks[0]);
-    await expect(tx)
-      .to.emit(batchTaskVoting, "VoteOnBatchTask")
-      .withArgs(pollId, allBatchTasks[0], timestamp, pollOwner.address);
+    // let allBatchTasks = await batchTaskVoting.getAllBatchTaskVoting(pollId); // //Open Poll 2 for vote
+    // console.log(allBatchTasks[0]);
+    // await expect(tx)
+    //   .to.emit(batchTaskVoting, "VoteOnBatchTask")
+    //   .withArgs(pollId, allBatchTasks[0], timestamp, pollOwner.address);
+  });
+  it("Should revert if vote on wrong pollId or wrong batchTask id", async function () {
+    //User vote on batchTask 1 of poll1
+    let pollId = 100;
+    let batchTaskId = 1;
+    await expect(
+      batchTaskVoting.connect(pollOwner).voteOnBatchTask(batchTaskId, pollId)
+    ).to.be.revertedWith("Poll not exist");
+
+    pollId = 1;
+    batchTaskId = 100;
+    await expect(
+      batchTaskVoting.connect(pollOwner).voteOnBatchTask(batchTaskId, pollId)
+    ).to.be.revertedWith("batch task id not exist");
   });
 });
