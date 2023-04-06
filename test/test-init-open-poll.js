@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("Test", function () {
+describe("Test Init and Open Poll", function () {
   beforeEach(async function () {
     //set up variables test
     [contract_owner, pollOwner, reporter, reviewer, bidder, pic] =
@@ -18,6 +18,7 @@ describe("Test", function () {
     task2Point = 3; //1 point=4hour
 
     poll1VoteDuration = 100; //100s
+    poll2VoteDuration = 50; //50s
 
     POLL_STATE = {
       CREATED: 0,
@@ -246,7 +247,6 @@ describe("Test", function () {
       );
 
     poll = await taskManager.getAllPoll();
-    console.log(poll[0].batchTaskIds);
     await expect(tx)
       .to.emit(batchTaskVoting, "OpenForVote")
       .withArgs(
@@ -264,5 +264,41 @@ describe("Test", function () {
     await expect(
       taskManager.connect(reporter).openPollForVote(pollId, poll1VoteDuration)
     ).to.be.revertedWith("You not own this Poll");
+  });
+  it("Should revert if open poll for vote  again", async function () {
+    //Poll Owner open poll1 for Vote
+    let pollId = 1;
+    //first time open=>ok
+    await taskManager
+      .connect(pollOwner)
+      .openPollForVote(pollId, poll1VoteDuration);
+
+    //open again=> revert
+    await expect(
+      taskManager.connect(pollOwner).openPollForVote(pollId, poll1VoteDuration)
+    ).to.be.revertedWith("Error: Invalid Poll State");
+  });
+  it("Should revert if open wrong or not exist poll id", async function () {
+    //Poll Owner open poll1 for Vote
+    let pollId = 100;
+    await expect(
+      taskManager.connect(pollOwner).openPollForVote(pollId, poll1VoteDuration)
+    ).to.be.revertedWith("Poll not exist!");
+  });
+
+  it("Should revert if vote duration wrong ", async function () {
+    //Poll Owner open poll1 for Vote
+    let pollId = 1;
+    await expect(
+      taskManager.connect(pollOwner).openPollForVote(pollId, 0)
+    ).to.be.revertedWith("vote duration must be positive");
+  });
+
+  it("Should revert if open vote for empty poll", async function () {
+    //Poll Owner open poll2 which is empty for Vote
+    let pollId = 2;
+    await expect(
+      taskManager.connect(pollOwner).openPollForVote(pollId, poll2VoteDuration)
+    ).to.be.revertedWith("Poll open must not be empty");
   });
 });

@@ -134,6 +134,10 @@ contract TaskManager is ITaskManager, Ownable {
 
     modifier checkPollState(POLL_STATE requiredState, uint _pollID) {
         require(
+            pollIdToPoll[_pollID].pollOwner != address(0),
+            "Poll not exist!"
+        );
+        require(
             pollIdToPoll[_pollID].pollState == requiredState,
             "Error: Invalid Poll State"
         );
@@ -164,6 +168,7 @@ contract TaskManager is ITaskManager, Ownable {
 
     //Todo: onlycall by backend with signed signature
     function initPoll(address _pollOwner) external {
+        require(_pollOwner != address(0), "Wrong poll owner address");
         Poll memory newPoll;
         pollCount++;
         newPoll.pollId = pollCount;
@@ -225,6 +230,11 @@ contract TaskManager is ITaskManager, Ownable {
         require(
             msg.sender == pollIdToPoll[_pollId].pollOwner,
             "You not own this Poll"
+        );
+        require(_voteDuration > 0, "vote duration must be positive");
+        require(
+            pollIdToPoll[_pollId].batchTaskIds.length > 0,
+            "Poll open must not be empty"
         );
         pollIdToPoll[_pollId].pollState = POLL_STATE.OPENFORVOTE;
         batchTaskVoting.openPollForVote(
