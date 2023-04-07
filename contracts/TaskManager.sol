@@ -180,7 +180,9 @@ contract TaskManager is ITaskManager, Ownable {
     }
 
     //Todo: onlycall by backend with signed signature
-    function initBatchTask(uint _pollId) external {
+    function initBatchTask(
+        uint _pollId
+    ) external checkPollState(POLL_STATE.CREATED, _pollId) {
         BatchTask memory newBatchTask;
         batchTaskCount++;
         newBatchTask.batchTaskId = batchTaskCount;
@@ -198,7 +200,11 @@ contract TaskManager is ITaskManager, Ownable {
         uint _minReward,
         address _reporter,
         address _reviewer
-    ) external {
+    ) external checkBatchTaskState(BATCH_TASK_STATE.CREATED, _batchTaskId) {
+        require(
+            _reporter != address(0) && _reviewer != address(0),
+            "Wrong address reporter or reviewer!"
+        );
         Task memory newTask;
         taskCount++;
         newTask.taskId = taskCount;
@@ -269,6 +275,10 @@ contract TaskManager is ITaskManager, Ownable {
     ) external checkBatchTaskState(BATCH_TASK_STATE.VOTED, _batchTaskID) {
         batchTaskIdToBatchTask[_batchTaskID].batchTaskState = BATCH_TASK_STATE
             .OPENFORAUCTION;
+        require(
+            batchTaskIdToBatchTask[_batchTaskID].taskIds.length > 0,
+            "There are no task in this batchTask"
+        );
         Task[] memory auctionTasks = new Task[](
             batchTaskIdToBatchTask[_batchTaskID].taskIds.length
         );

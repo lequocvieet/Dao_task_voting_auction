@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+var assert = require("assert");
 
 describe("Test Voting", function () {
   beforeEach(async function () {
@@ -155,13 +156,6 @@ describe("Test Voting", function () {
     tx = await batchTaskVoting
       .connect(pollOwner)
       .voteOnBatchTask(batchTaskId, pollId);
-    blockNumber = await ethers.provider.getBlockNumber(); // obtain current block number
-    timestamp = (await ethers.provider.getBlock(blockNumber)).timestamp; // obtain current block timestamp
-    // let allBatchTasks = await batchTaskVoting.getAllBatchTaskVoting(pollId); // //Open Poll 2 for vote
-    // console.log(allBatchTasks[0]);
-    // await expect(tx)
-    //   .to.emit(batchTaskVoting, "VoteOnBatchTask")
-    //   .withArgs(pollId, allBatchTasks[0], timestamp, pollOwner.address);
   });
   it("Should revert if vote on wrong pollId or wrong batchTask id", async function () {
     //User vote on batchTask 1 of poll1
@@ -176,5 +170,107 @@ describe("Test Voting", function () {
     await expect(
       batchTaskVoting.connect(pollOwner).voteOnBatchTask(batchTaskId, pollId)
     ).to.be.revertedWith("batch task id not exist");
+  });
+
+  it("Should revert if poll duration is due", async function () {
+    //User vote on batchTask 1 of poll1
+    let pollId = 1;
+    let batchTaskId = 1;
+
+    // Increase block time by 1 day
+    await network.provider.send("evm_increaseTime", [86400]);
+
+    await expect(
+      batchTaskVoting.connect(pollOwner).voteOnBatchTask(batchTaskId, pollId)
+    ).to.be.revertedWith("Poll Voting is end");
+  });
+
+  it("Should revert if vote again but not change vote choice", async function () {
+    //User vote on batchTask 1 of poll1
+    let pollId = 1;
+    let batchTaskId = 1;
+    //vote first time
+    tx = await batchTaskVoting
+      .connect(pollOwner)
+      .voteOnBatchTask(batchTaskId, pollId);
+    //vote again but not change vote choice
+    await expect(
+      batchTaskVoting.connect(pollOwner).voteOnBatchTask(batchTaskId, pollId)
+    ).to.be.revertedWith("You not change your vote");
+  });
+  it("Should allow multi user vote and vote again many time ", async function () {
+    //User vote on batchTask 1 of poll1
+    let pollId = 1;
+    let batchTaskId1 = 1;
+    let batchtaskId2 = 2;
+    //vote first time
+    tx = await batchTaskVoting
+      .connect(pollOwner)
+      .voteOnBatchTask(batchTaskId1, pollId);
+    //vote again, change vote choice to batchTask2
+    tx = await batchTaskVoting
+      .connect(pollOwner)
+      .voteOnBatchTask(batchtaskId2, pollId);
+
+    //vote again, change vote choice to batchTask1
+    tx = await batchTaskVoting
+      .connect(pollOwner)
+      .voteOnBatchTask(batchTaskId1, pollId);
+
+    //vote again, change vote choice to batchTask2
+    tx = await batchTaskVoting
+      .connect(pollOwner)
+      .voteOnBatchTask(batchtaskId2, pollId);
+
+    //pic vote batchTask2
+    tx = await batchTaskVoting
+      .connect(pic)
+      .voteOnBatchTask(batchtaskId2, pollId);
+
+    //pic change vote to batchTask1
+    tx = await batchTaskVoting
+      .connect(pic)
+      .voteOnBatchTask(batchTaskId1, pollId);
+
+    //after all change check all batch in poll1
+    let batchTasks = await batchTaskVoting.getAllBatchTaskVoting(1);
+    assert.equal(
+      batchTasks.length,
+      2,
+      "Incorrect number of batch tasks in poll"
+    );
+
+    assert.equal(batchTasks[0].result, 0, "Incorrect result");
+    assert.equal(batchTasks[0].voters.length, 2, "Incorrect number voter");
+
+    assert.equal(batchTasks[1].result, 0, "Incorrect result");
+    assert.equal(batchTasks[1].voters.length, 2, "Incorrect number voter");
+  });
+  it("Should emit notify if  endvote soon", async function () {
+    //User vote on batchTask 1 of poll1
+    let pollId = 1;
+    let batchTaskId = 1;
+    tx = await batchTaskVoting
+      .connect(pollOwner)
+      .voteOnBatchTask(batchTaskId, pollId);
+
+    tx = await batchTaskVoting.connect(pic).endVote();
+    await expect(tx)
+      .to.emit(batchTaskVoting, "Notify")
+      .withArgs("There are no Poll Voting can end at the moment");
+  });
+
+  it("Should endvote ", async function () {
+    //User vote on batchTask 1 of poll1
+    let pollId = 1;
+    let batchTaskId = 1;
+    tx = await batchTaskVoting
+      .connect(pollOwner)
+      .voteOnBatchTask(batchTaskId, pollId);
+    // Increase block time by 1 day
+    await network.provider.send("evm_increaseTime", [86400]);
+
+    tx = await batchTaskVoting.connect(pic).endVote();
+    await expect(tx).to.emit(batchTaskVoting, "EndVote");
   });
 });

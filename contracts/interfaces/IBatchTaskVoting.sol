@@ -34,4 +34,6 @@ interface IBatchTaskVoting {
         uint _voteDuration,
         uint[] memory _batchTaskids
     ) external;
+
+    function getAllPollVoting() external view returns (PollVoting[] memory);
 }
