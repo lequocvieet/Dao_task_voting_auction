@@ -239,8 +239,8 @@ contract TaskManager is ITaskManager, Ownable {
         );
         require(_voteDuration > 0, "vote duration must be positive");
         require(
-            pollIdToPoll[_pollId].batchTaskIds.length > 0,
-            "Poll open must not be empty"
+            pollIdToPoll[_pollId].batchTaskIds.length > 1,
+            "Poll empty or has only 1 batch, no need to vote!"
         );
         pollIdToPoll[_pollId].pollState = POLL_STATE.OPENFORVOTE;
         batchTaskVoting.openPollForVote(
@@ -272,7 +272,17 @@ contract TaskManager is ITaskManager, Ownable {
         uint _pollID,
         uint _batchTaskID,
         uint _auctionDuration
-    ) external checkBatchTaskState(BATCH_TASK_STATE.VOTED, _batchTaskID) {
+    ) external {
+        if (pollIdToPoll[_pollID].batchTaskIds.length == 1) {
+            //Poll has only 1 batch
+            batchTaskIdToBatchTask[_batchTaskID]
+                .batchTaskState = BATCH_TASK_STATE.VOTED;
+        }
+        require(
+            batchTaskIdToBatchTask[_batchTaskID].batchTaskState ==
+                BATCH_TASK_STATE.VOTED,
+            "Error: Invalid Batch Task State"
+        );
         batchTaskIdToBatchTask[_batchTaskID].batchTaskState = BATCH_TASK_STATE
             .OPENFORAUCTION;
         require(

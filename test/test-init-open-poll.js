@@ -299,6 +299,16 @@ describe("Test Init and Open Poll", function () {
     let pollId = 2;
     await expect(
       taskManager.connect(pollOwner).openPollForVote(pollId, poll2VoteDuration)
-    ).to.be.revertedWith("Poll open must not be empty");
+    ).to.be.revertedWith("Poll empty or has only 1 batch, no need to vote!");
+  });
+
+  it("Should revert if Poll opne has only 1 batchTask", async function () {
+    //Poll Owner open poll2 which has only 1 batchTask
+    let pollId = 2;
+    //init batchTask for poll2
+    await taskManager.connect(contract_owner).initBatchTask(pollId);
+    await expect(
+      taskManager.connect(pollOwner).openPollForVote(pollId, poll2VoteDuration)
+    ).to.be.revertedWith("Poll empty or has only 1 batch, no need to vote!");
   });
 });
