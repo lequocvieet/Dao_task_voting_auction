@@ -186,7 +186,7 @@ describe("Test Voting", function () {
   });
 
   it("Should revert if batchTask is not for auction", async function () {
-    //open auction for batchTask1 in poll1 in for 100s
+    //open auction for batchTask1 in poll1 for 100s
     //batch1 is not for auction because < vote of batch2
     await expect(
       taskManager.connect(pollOwner).openBatchTaskForAuction(1, 1, 100)

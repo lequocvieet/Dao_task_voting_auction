@@ -150,6 +150,10 @@ contract TaskAuction is ITaskAuction, Ownable {
         public
         checkBatchTaskState(BATCH_TASK_STATE.OPENFORAUCTION, _batchTaskID)
     {
+        require(
+            msg.sender != taskIdToAuctionTask[_taskID].reviewer,
+            "Task reviewer cannot bid "
+        );
         AuctionTask storage auctionTask = taskIdToAuctionTask[_taskID];
         require(auctionTask.taskId == _taskID, "Wrong taskID");
         //Todo: if value bid ==minreward end auction

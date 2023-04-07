@@ -66,7 +66,6 @@ async function main() {
 
   //openPollForVote(pollId, voteDuration)
   await taskManager.connect(pollOwner).openPollForVote(1, 1000); //poll1
-  await taskManager.connect(pollOwner).openPollForVote(2, 1000); //poll2
 
   //Filter OpenPollForVote event
   let allPollOpened = [];
