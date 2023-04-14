@@ -393,7 +393,7 @@ contract TaskManager is ITaskManager, Ownable {
     //require task state=SUBMITED
     //Reviewer choose % work load done to decide which %reward would be send to doer
     //After Submit revieww=> transfer money for doer
-    //=> Todo: leaf over money would send to bank manager reserve for many tasks later
+    //=> Todo: leaf over money would send to expecial pool reserve for many tasks later
     */
     function submitReview(
         uint _taskId,

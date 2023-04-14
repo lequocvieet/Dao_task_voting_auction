@@ -9,11 +9,11 @@ async function main() {
     await ethers.getSigners();
 
   console.log("contract owner", contract_owner.address);
-  console.log("pollOwner", pollOwner.address);
-  console.log("reporter", reporter.address);
-  console.log("reviewer", reviewer.address);
-  console.log("bidder", bidder.address);
-  console.log("pic", pic.address);
+  // console.log("pollOwner", pollOwner.address);
+  // console.log("reporter", reporter.address);
+  // console.log("reviewer", reviewer.address);
+  // console.log("bidder", bidder.address);
+  // console.log("pic", pic.address);
 
   const hardhat_node_provider = new ethers.providers.JsonRpcProvider(
     "http://127.0.0.1:8545/"
@@ -64,98 +64,98 @@ async function main() {
   console.log("BankManager deploy at:", bankManager.address);
   savebuildFiles(bankManager, "BankManager");
 
-  //------------------------------------------INIT--------------------------------------
-  totalSupply = 1000; // 1000 Token
-  fundPrice = 100; //bank mint 100 token for all account
+  // //------------------------------------------INIT--------------------------------------
+  // totalSupply = 1000; // 1000 Token
+  // fundPrice = 100; //bank mint 100 token for all account
 
-  task1Reward = 20; //20 token
-  task1MinReward = 5; //5 token
-  task1Point = 4; //1 point=4hour
+  // task1Reward = 20; //20 token
+  // task1MinReward = 5; //5 token
+  // task1Point = 4; //1 point=4hour
 
-  task2Reward = 30; //30 token
-  task2MinReward = 7; //7 token
-  task2Point = 3; //1 point=4hour
+  // task2Reward = 30; //30 token
+  // task2MinReward = 7; //7 token
+  // task2Point = 3; //1 point=4hour
 
-  poll1VoteDuration = 100; //100s
+  // poll1VoteDuration = 100; //100s
 
-  //SetUp interface variable
-  await taskManager.setTaskAuction(taskAuction.address);
-  await taskManager.setBankManager(bankManager.address);
-  await taskManager.setBatchTaskVoting(batchTaskVoting.address);
-  await taskManager.chooseToken(token.address);
-  await taskManager.setCreditScore(creditScore.address);
-  await taskManager.chooseToken(token.address);
+  // //SetUp interface variable
+  // await taskManager.setTaskAuction(taskAuction.address);
+  // await taskManager.setBankManager(bankManager.address);
+  // await taskManager.setBatchTaskVoting(batchTaskVoting.address);
+  // await taskManager.chooseToken(token.address);
+  // await taskManager.setCreditScore(creditScore.address);
+  // await taskManager.chooseToken(token.address);
 
-  await taskAuction.setTaskManager(taskManager.address);
-  await taskAuction.setBankManager(bankManager.address);
-  await taskAuction.chooseToken(token.address);
+  // await taskAuction.setTaskManager(taskManager.address);
+  // await taskAuction.setBankManager(bankManager.address);
+  // await taskAuction.chooseToken(token.address);
 
-  await batchTaskVoting.setTaskManager(taskManager.address);
+  // await batchTaskVoting.setTaskManager(taskManager.address);
 
-  //Mint Token
-  await bankManager.mint(token.address, bankManager.address, totalSupply);
-  await bankManager.mint(token.address, contract_owner.address, fundPrice);
-  await bankManager.mint(token.address, pollOwner.address, fundPrice);
-  await bankManager.mint(token.address, reporter.address, fundPrice);
-  await bankManager.mint(token.address, reviewer.address, fundPrice);
-  await bankManager.mint(token.address, bidder.address, fundPrice);
-  await bankManager.mint(token.address, pic.address, fundPrice);
+  // //Mint Token
+  // await bankManager.mint(token.address, bankManager.address, totalSupply);
+  // await bankManager.mint(token.address, contract_owner.address, fundPrice);
+  // await bankManager.mint(token.address, pollOwner.address, fundPrice);
+  // await bankManager.mint(token.address, reporter.address, fundPrice);
+  // await bankManager.mint(token.address, reviewer.address, fundPrice);
+  // await bankManager.mint(token.address, bidder.address, fundPrice);
+  // await bankManager.mint(token.address, pic.address, fundPrice);
 
-  console.log(
-    "Balance of Bank",
-    await bankManager.balanceOf(bankManager.address, token.address)
-  );
-  console.log(
-    "Balance of contract_owner",
-    await bankManager.balanceOf(contract_owner.address, token.address)
-  );
-  console.log(
-    "Balance of pollOwner",
-    await bankManager.balanceOf(pollOwner.address, token.address)
-  );
-  console.log(
-    "Balance of reporter",
-    await bankManager.balanceOf(reporter.address, token.address)
-  );
-  console.log(
-    "Balance of reviewer",
-    await bankManager.balanceOf(reviewer.address, token.address)
-  );
-  console.log(
-    "Balance of bidder",
-    await bankManager.balanceOf(bidder.address, token.address)
-  );
-  console.log(
-    "Balance of pic",
-    await bankManager.balanceOf(pic.address, token.address)
-  );
+  // console.log(
+  //   "Balance of Bank",
+  //   await bankManager.balanceOf(bankManager.address, token.address)
+  // );
+  // console.log(
+  //   "Balance of contract_owner",
+  //   await bankManager.balanceOf(contract_owner.address, token.address)
+  // );
+  // console.log(
+  //   "Balance of pollOwner",
+  //   await bankManager.balanceOf(pollOwner.address, token.address)
+  // );
+  // console.log(
+  //   "Balance of reporter",
+  //   await bankManager.balanceOf(reporter.address, token.address)
+  // );
+  // console.log(
+  //   "Balance of reviewer",
+  //   await bankManager.balanceOf(reviewer.address, token.address)
+  // );
+  // console.log(
+  //   "Balance of bidder",
+  //   await bankManager.balanceOf(bidder.address, token.address)
+  // );
+  // console.log(
+  //   "Balance of pic",
+  //   await bankManager.balanceOf(pic.address, token.address)
+  // );
 
-  //Init Data Poll BatchTask Task
-  await taskManager.connect(contract_owner).initPoll(pollOwner.address);
-  await taskManager.connect(contract_owner).initPoll(pollOwner.address);
-  await taskManager.connect(contract_owner).initBatchTask(1); //batch1 poll1
-  await taskManager.connect(contract_owner).initBatchTask(1); //batch2 poll2
-  await taskManager.connect(contract_owner).initBatchTask(2); //batch3 poll2
-  await taskManager
-    .connect(contract_owner)
-    .initTask(
-      1,
-      task1Point,
-      task1Reward,
-      task1MinReward,
-      reporter.address,
-      reviewer.address
-    ); //task 1 batch1
-  await taskManager
-    .connect(contract_owner)
-    .initTask(
-      1,
-      task2Point,
-      task2Reward,
-      task2MinReward,
-      reporter.address,
-      reviewer.address
-    ); //task2 batch1
+  // //Init Data Poll BatchTask Task
+  // await taskManager.connect(contract_owner).initPoll(pollOwner.address);
+  // await taskManager.connect(contract_owner).initPoll(pollOwner.address);
+  // await taskManager.connect(contract_owner).initBatchTask(1); //batch1 poll1
+  // await taskManager.connect(contract_owner).initBatchTask(1); //batch2 poll2
+  // await taskManager.connect(contract_owner).initBatchTask(2); //batch3 poll2
+  // await taskManager
+  //   .connect(contract_owner)
+  //   .initTask(
+  //     1,
+  //     task1Point,
+  //     task1Reward,
+  //     task1MinReward,
+  //     reporter.address,
+  //     reviewer.address
+  //   ); //task 1 batch1
+  // await taskManager
+  //   .connect(contract_owner)
+  //   .initTask(
+  //     1,
+  //     task2Point,
+  //     task2Reward,
+  //     task2MinReward,
+  //     reporter.address,
+  //     reviewer.address
+  //   ); //task2 batch1
 }
 
 function savebuildFiles(contract, name) {

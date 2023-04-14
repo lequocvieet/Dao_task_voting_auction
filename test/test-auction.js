@@ -192,4 +192,12 @@ describe("Test Voting", function () {
       taskManager.connect(pollOwner).openBatchTaskForAuction(1, 1, 100)
     ).to.be.revertedWith("Error: Invalid Batch Task State");
   });
+
+  it("Should open batch task for auction", async function () {
+    //open auction for batchTask1 in poll1 for 100s
+    //batch1 is not for auction because < vote of batch2
+    await expect(
+      taskManager.connect(pollOwner).openBatchTaskForAuction(1, 1, 100)
+    ).to.be.revertedWith("Error: Invalid Batch Task State");
+  });
 });

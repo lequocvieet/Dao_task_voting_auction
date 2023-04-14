@@ -52,8 +52,15 @@ module.exports = {
     ],
   },
   networks: {
+    new: {
+      url: "http://172.16.79.15:8545/",
+    },
     hardhat: {
       allowUnlimitedContractSize: true,
+    },
+    sepolia: {
+      url: "https://sepolia.infura.io/v3/2e5775eb41aa490991bff9eb183e1122",
+      accounts: ["0x-private-key-here"],
     },
   },
 };

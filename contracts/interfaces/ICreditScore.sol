@@ -12,10 +12,6 @@ interface ICreditScore {
         uint[] taskDoneIds;
     }
 
-    function calculateScoreByPercentTaskDone(
-        address _userAddress
-    ) external returns (uint);
-
     function saveTaskDone(
         uint _taskId,
         address _doer,

@@ -187,7 +187,7 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
     }
 
     /**
-     *ToDo:only call by keeper()
+     *Call by keeper()
      *Only batchTask with State=OPENFORVOTE and is due(endVote time > start vote+duration)
      */
     function endVote() external {
@@ -200,7 +200,6 @@ contract BatchTaskVoting is IBatchTaskVoting, Ownable {
             ) {
                 found = true;
                 pollVotings[i].pollState = POLL_STATE.VOTED;
-                //Todo: Error happen if create poll with no batch inside
                 int256 max = batchTaskIdToBatchTaskVoting[
                     pollVotings[i].batchTaskIds[0]
                 ].result;

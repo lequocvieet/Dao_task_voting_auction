@@ -140,7 +140,7 @@ contract TaskAuction is ITaskAuction, Ownable {
     //Once Bid require amount money>= minReward and < lowestBidAmount
     //Require taskState=OPENFORAUCTION
     //Require time placeBid < time startAuction+duration
-    //Todo: case use bid against their previous bid
+    //Todo: case user bid against their previous bid
     */
     function placeBid(
         uint _taskID,
@@ -156,7 +156,7 @@ contract TaskAuction is ITaskAuction, Ownable {
         );
         AuctionTask storage auctionTask = taskIdToAuctionTask[_taskID];
         require(auctionTask.taskId == _taskID, "Wrong taskID");
-        //Todo: if value bid ==minreward end auction
+        //Todo: if value bid ==min reward end auction
         require(
             bankManager.balanceOf(msg.sender, tokenAddress) >= _amountBid,
             "Your balance not enough"
@@ -212,7 +212,7 @@ contract TaskAuction is ITaskAuction, Ownable {
         }
     }
 
-    //Todo: only call by keeper(cronjob)
+    //Call by keeper(cronjob)
     //getAll batchTask with state=OPENFORAUCTION
     //and time Start+duration> time callEndAuction
     function endAuction() public {

@@ -21,11 +21,10 @@ contract CreditScore is ICreditScore {
 
     event CalculateCommitmentToken(address indexed user, uint value);
 
-    //Todo:only call internal of this contract
     //Todo: exponential case
     function calculateScoreByPercentTaskDone(
         address _userAddress
-    ) public override returns (uint) {
+    ) internal returns (uint) {
         //iterate through all taskDone
         if (userAddressToUser[_userAddress].userAddress == address(0)) {
             //no data before
